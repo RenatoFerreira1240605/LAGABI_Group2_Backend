@@ -1,15 +1,46 @@
-# .NET
+# .NET build artifacts
 bin/
 obj/
-*.user
-*.suo
-*.userprefs
-*.swp
+*.log
 
-# Rider/VSCode
+# Visual Studio
+.vs/
+**/.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.vsidx
+
+# Rider / ReSharper
 .idea/
+*.DotSettings.user
+
+# VS Code
 .vscode/
 
-# OS
+# OS cruft
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
+*.snupkg
+
+# Tools / coverage (se usares)
+coverage/
+TestResult*/
+*.coverage
+*.coveragexml
+
+# Docker (opcional)
+**/obj/Docker/*
+**/bin/Debug/net*/publish/
+
+# Secrets locais (não commits)
+secrets.json
+appsettings.Development.json
+appsettings.Local.json
