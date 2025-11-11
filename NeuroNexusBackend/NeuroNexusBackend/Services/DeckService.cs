@@ -7,10 +7,20 @@ namespace NeuroNexusBackend.Services
     public class DeckService : IDeckService
     {
         private readonly IDeckRepo _repo;
+        public DeckService(IDeckRepo repo)
+        {
+            _repo = repo ?? throw new InvalidOperationException("IDeckRepo not resolved. Check DI registration.");
+        }
+
+
         public async Task<long> CreateAsync(long userId, DeckCreateRequestDTO req, CancellationToken ct)
         {
-            var tuples = req.Cards.Select(x => (x.CardId, (short)(x.Qty <= 0 ? 1 : x.Qty)));
+            if (string.IsNullOrWhiteSpace(req.Name)) throw new ArgumentException("Name is required");
+            var tuples = (req.Cards ?? new List<DeckCardItemDTO>())
+                .Select(x => (x.CardId, (short)(x.Qty <= 0 ? 1 : x.Qty)));
             var deck = await _repo.CreateAsync(userId, req.Name, tuples, ct);
+            
+
             return deck.Id;
         }
 

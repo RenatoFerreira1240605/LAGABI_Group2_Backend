@@ -17,8 +17,8 @@ namespace NeuroNexusBackend
             var builder = WebApplication.CreateBuilder(args);
 
             // Connection string: env DATABASE_URL > appsettings > fallback local
-            var conn = Environment.GetEnvironmentVariable("DATABASE_URL")
-                      ?? builder.Configuration.GetConnectionString("Default")
+            var conn = //Environment.GetEnvironmentVariable("DATABASE_URL") ??
+                      builder.Configuration.GetConnectionString("Default")
                       ?? "Host=localhost;Port=5432;Database=neuronexus;Username=postgres;Password=postgres";
 
             // DbContext: Npgsql + NetTopologySuite (spatial)
@@ -41,7 +41,23 @@ namespace NeuroNexusBackend
             // Controllers + Swagger
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.AddSecurityDefinition("XUser", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Name = "X-User",
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+                    Description = "User ID (long) para dev"
+                });
+                c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+                {
+                    { new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                        { Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                            { Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme, Id = "XUser" } },
+                    Array.Empty<string>() }
+                });
+            });
 
             var app = builder.Build();
 

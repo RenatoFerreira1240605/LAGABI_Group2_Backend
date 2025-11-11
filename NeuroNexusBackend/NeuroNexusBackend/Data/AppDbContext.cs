@@ -35,7 +35,8 @@ namespace NeuroNexusBackend.Data
         /// </summary>
         protected override void OnModelCreating(ModelBuilder b)
         {
-            // ---- Enable PostGIS (required for spatial operations) ----
+            // ===== Schema & extensions =====
+            b.HasDefaultSchema("public");
             b.HasPostgresExtension("postgis");
 
             // =========================
@@ -43,10 +44,17 @@ namespace NeuroNexusBackend.Data
             // =========================
             b.Entity<User>(e =>
             {
+                e.ToTable("Users");
                 e.HasKey(x => x.Id);
-                e.Property(x => x.Id).UseIdentityByDefaultColumn(); // BIGINT identity
+                e.Property(x => x.Id).UseIdentityByDefaultColumn();     // BIGINT identity
+                e.Property(x => x.Handle).HasMaxLength(32).IsRequired();
                 e.HasIndex(x => x.Handle).IsUnique();
-                e.Property(x => x.Handle).HasMaxLength(32);
+
+                e.Property(x => x.DisplayName).HasMaxLength(64);
+                e.Property(x => x.ExternalProvider).HasMaxLength(128);
+                e.Property(x => x.ExternalSubject).HasMaxLength(256);
+                e.Property(x => x.Email).HasMaxLength(256);
+                e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
             });
 
             // =========================
@@ -54,33 +62,53 @@ namespace NeuroNexusBackend.Data
             // =========================
             b.Entity<Card>(e =>
             {
+                e.ToTable("Cards");
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Id).UseIdentityByDefaultColumn();
-                e.Property(x => x.Name).HasMaxLength(64);
-                e.Property(x => x.Suit).HasMaxLength(32);   // Analytical|Creative|Structured|Social
-                e.Property(x => x.Rarity).HasMaxLength(8);  // C|U|R|SR|UR
+
+                e.Property(x => x.Name).HasMaxLength(64).IsRequired();
+                e.Property(x => x.Suit).HasMaxLength(32).IsRequired();      // Analytical|Creative|Structured|Social
+                e.Property(x => x.Rarity).HasMaxLength(16).IsRequired();    // Common|Rare|Unique|Legendary (ou a tua convenção)
+                e.Property(x => x.Points).HasDefaultValue((short)0);
+
+                // Campos de runtime/engine (texto simples para evitar problemas com enums/JSONB)
+                e.Property(x => x.Ability).HasMaxLength(64);                 // e.g. Draw / Burnout / Innovation ...
+                e.Property(x => x.Trigger).HasMaxLength(48);                 // e.g. OnReveal / OnAcceptAccept / EndOfRound ...
+                e.Property(x => x.Effect).HasMaxLength(48);                  // e.g. Draw / GainPoints / ReduceBurnout ...
+                e.Property(x => x.Amount);                                   // inteiro curto (pode ser negativo)
+                e.Property(x => x.Target).HasMaxLength(24);                  // Self / Opponent / Both
+                e.Property(x => x.OncePerGame).HasDefaultValue(false);
+                e.Property(x => x.AbilityJson).HasColumnType("text");        // JSON como string
             });
 
             // =========================
-            // Decks / DeckCards (join)
+            // Decks
             // =========================
             b.Entity<Deck>(e =>
             {
+                e.ToTable("Decks");
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Id).UseIdentityByDefaultColumn();
-                e.Property(x => x.Name).HasMaxLength(64);
-                e.HasIndex(x => x.UserId);
 
+                e.Property(x => x.Name).HasMaxLength(64).IsRequired();
+                e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
+
+                e.HasIndex(x => x.UserId);
                 e.HasOne(x => x.User)
                     .WithMany()
                     .HasForeignKey(x => x.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Composite key for the join table (no identity here)
+            // =========================
+            // DeckCards (join)
+            // =========================
             b.Entity<DeckCard>(e =>
             {
-                e.HasKey(x => new { x.DeckId, x.CardId });
+                e.ToTable("DeckCards");
+                e.HasKey(x => new { x.DeckId, x.CardId });               // PK composta
+                e.Property(x => x.Qty).HasDefaultValue((short)1);
+
                 e.HasOne(x => x.Deck)
                     .WithMany(d => d.Cards)
                     .HasForeignKey(x => x.DeckId)
@@ -89,7 +117,9 @@ namespace NeuroNexusBackend.Data
                 e.HasOne(x => x.Card)
                     .WithMany()
                     .HasForeignKey(x => x.CardId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                e.HasIndex(x => new { x.DeckId, x.CardId }).IsUnique();  // salvaguarda adicional
             });
 
             // =========================
@@ -97,19 +127,23 @@ namespace NeuroNexusBackend.Data
             // =========================
             b.Entity<Spawn>(e =>
             {
+                e.ToTable("Spawns");
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Id).UseIdentityByDefaultColumn();
 
-                // SRID 4326 (WGS84) e tipo Point
-                e.Property(x => x.Location)
-                 .HasColumnType("geometry(Point,4326)");
+                // PostGIS Point SRID 4326
+                e.Property(x => x.Location).HasColumnType("geometry(Point,4326)").IsRequired();
 
-                // Índice espacial GiST
-                e.HasIndex(x => x.Location).HasMethod("GIST");
-
+                e.Property(x => x.Status).HasMaxLength(16).HasDefaultValue("active");
+                e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
                 e.HasIndex(x => x.Status);
                 e.HasIndex(x => x.ExpiresAt);
-                e.Property(x => x.Status).HasMaxLength(16);
+                e.HasIndex(x => x.Location).HasMethod("GIST");
+
+                e.HasOne<Card>()
+                    .WithMany()
+                    .HasForeignKey(x => x.CardId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             // =========================
@@ -117,38 +151,50 @@ namespace NeuroNexusBackend.Data
             // =========================
             b.Entity<UserCard>(e =>
             {
+                e.ToTable("UserCards");
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Id).UseIdentityByDefaultColumn();
-                e.HasIndex(x => x.OwnerId);
-                e.HasIndex(x => x.Status);
 
-                e.Property(x => x.Title).HasMaxLength(64);
-                e.Property(x => x.Suit).HasMaxLength(32);
+                e.Property(x => x.Title).HasMaxLength(64).IsRequired();
+                e.Property(x => x.Suit).HasMaxLength(32).IsRequired();
                 e.Property(x => x.EffectText).HasMaxLength(140);
                 e.Property(x => x.ArtworkUrl).HasMaxLength(512);
                 e.Property(x => x.Status).HasMaxLength(16).HasDefaultValue("draft");
                 e.Property(x => x.Version).HasDefaultValue(1);
+                e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
 
-                // Optional FK to CardTemplate (uncomment if you want the FK enforced)
+                e.HasIndex(x => x.OwnerId);
+                e.HasIndex(x => x.Status);
+
+                e.HasOne<User>()
+                    .WithMany()
+                    .HasForeignKey(x => x.OwnerId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // FK opcional para Template (descomenta se quiseres forçar)
                 // e.HasOne<CardTemplate>().WithMany().HasForeignKey(x => x.TemplateId).OnDelete(DeleteBehavior.Restrict);
             });
 
             b.Entity<CardTemplate>(e =>
             {
+                e.ToTable("CardTemplates");
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Id).UseIdentityByDefaultColumn();
-                e.Property(x => x.Name).HasMaxLength(48);
+
+                e.Property(x => x.Name).HasMaxLength(48).IsRequired();
                 e.Property(x => x.Guidance).HasMaxLength(200);
             });
 
             b.Entity<CardReview>(e =>
             {
+                e.ToTable("CardReviews");
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Id).UseIdentityByDefaultColumn();
-                e.Property(x => x.Outcome).HasMaxLength(16);
+                e.Property(x => x.Outcome).HasMaxLength(16).IsRequired();
                 e.Property(x => x.Note).HasMaxLength(500);
+                e.Property(x => x.ReviewedAt).HasDefaultValueSql("now()");
 
-                // Optional FKs (uncomment if you want referential integrity here)
+                // FKs opcionais
                 // e.HasOne<UserCard>().WithMany().HasForeignKey(x => x.UserCardId).OnDelete(DeleteBehavior.Cascade);
                 // e.HasOne<User>().WithMany().HasForeignKey(x => x.ReviewerId).OnDelete(DeleteBehavior.Restrict);
             });
@@ -158,38 +204,53 @@ namespace NeuroNexusBackend.Data
             // =========================
             b.Entity<MmrRating>(e =>
             {
+                e.ToTable("MmrRatings");
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Id).UseIdentityByDefaultColumn();
-
-                e.HasIndex(x => new { x.UserId, x.Mode }).IsUnique();
 
                 e.Property(x => x.Mode).HasMaxLength(32).HasDefaultValue("pvp1v1");
                 e.Property(x => x.Rating).HasDefaultValue(1000);
                 e.Property(x => x.Deviation).HasDefaultValue(350);
                 e.Property(x => x.Volatility).HasDefaultValue(120);
+
+                e.HasIndex(x => new { x.UserId, x.Mode }).IsUnique();
+
+                e.HasOne<User>()
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             b.Entity<Match>(e =>
             {
+                e.ToTable("Matches");
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Id).UseIdentityByDefaultColumn();
 
-                e.HasIndex(x => x.Status);
                 e.Property(x => x.Mode).HasMaxLength(32).HasDefaultValue("pvp1v1");
                 e.Property(x => x.Status).HasMaxLength(16).HasDefaultValue("queued");
+                e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
+
+                e.HasIndex(x => x.Status);
+
+                e.HasOne<User>().WithMany().HasForeignKey(x => x.Player1Id).OnDelete(DeleteBehavior.Restrict);
+                e.HasOne<User>().WithMany().HasForeignKey(x => x.Player2Id).OnDelete(DeleteBehavior.Restrict);
             });
 
             b.Entity<TelemetryEvent>(e =>
             {
+                e.ToTable("TelemetryEvents");
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Id).UseIdentityByDefaultColumn();
 
+                e.Property(x => x.Kind).HasMaxLength(48).IsRequired();
+                e.Property(x => x.PayloadJson).HasColumnType("text");
+                e.Property(x => x.Ts).HasDefaultValueSql("now()");
+
                 e.HasIndex(x => x.MatchId);
                 e.HasIndex(x => x.UserId);
-
-                e.Property(x => x.Kind).HasMaxLength(48);
-                e.Property(x => x.PayloadJson).HasColumnType("text");
             });
         }
+
     }
 }
