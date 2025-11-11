@@ -27,6 +27,9 @@ namespace NeuroNexusBackend.Models
         [DataType(DataType.Text)]
         public string Handle { get; set; } = default!;
 
+        [StringLength(64)]
+        public string? DisplayName { get; set; }
+
         /// <summary>
         /// Creation timestamp (UTC). Set once at insert time.
         /// </summary>

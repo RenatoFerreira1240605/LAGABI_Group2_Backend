@@ -7,5 +7,6 @@
     {
         /// <summary>Optional public nickname to use for the guest account.</summary>
         public string? Handle { get; set; }
+        public string? DisplayName { get; set; }
     }
 }
