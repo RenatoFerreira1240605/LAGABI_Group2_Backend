@@ -1,11 +1,9 @@
-﻿namespace NeuroNexusBackend.Models
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace NeuroNexusBackend.Models
 {
-    using System.ComponentModel.DataAnnotations;
-    using System.ComponentModel.DataAnnotations.Schema;
-    using Microsoft.EntityFrameworkCore;
-
-    namespace NeuroNexus.Api.Models;
-
     /// <summary>
     /// Catalog card definition used to build decks and spawns.
     /// </summary>
@@ -16,7 +14,6 @@
         /// Primary key (stable integer id for a catalog item).
         /// </summary>
         [Key]
-        [Comment("Primary key for Cards (catalog id).")]
         public int Id { get; set; }
 
         /// <summary>
@@ -24,7 +21,6 @@
         /// </summary>
         [Required]
         [StringLength(64)]
-        [Comment("Display name of the card.")]
         public string Name { get; set; } = default!;
 
         /// <summary>
@@ -33,7 +29,6 @@
         /// </summary>
         [Required]
         [RegularExpression("Analytical|Creative|Structured|Social")]
-        [Comment("Suit taxonomy of the card.")]
         public string Suit { get; set; } = default!;
 
         /// <summary>
@@ -41,7 +36,6 @@
         /// </summary>
         [Required]
         [RegularExpression("C|U|R|SR|UR")]
-        [Comment("Rarity code (C, U, R, SR, UR).")]
         public string Rarity { get; set; } = default!;
 
         /// <summary>
@@ -49,7 +43,6 @@
         /// </summary>
         [Required]
         [Range(1, 5)]
-        [Comment("Point value for the card (1..5).")]
         public short Points { get; set; }
     }
 

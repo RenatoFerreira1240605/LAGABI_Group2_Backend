@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using NeuroNexusBackend.Models.NeuroNexus.Api.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -16,7 +15,6 @@ namespace NeuroNexusBackend.Models
         /// Deck identifier (part of composite PK).
         /// </summary>
         [Required]
-        [Comment("Foreign key to Decks.Id (part of composite PK).")]
         public Guid DeckId { get; set; }
 
         /// <summary>
@@ -28,7 +26,6 @@ namespace NeuroNexusBackend.Models
         /// Card identifier (part of composite PK).
         /// </summary>
         [Required]
-        [Comment("Foreign key to Cards.Id (part of composite PK).")]
         public int CardId { get; set; }
 
         /// <summary>
@@ -41,7 +38,6 @@ namespace NeuroNexusBackend.Models
         /// </summary>
         [Required]
         [Range(1, 4)]
-        [Comment("Quantity of the card inside the deck (1..4).")]
         public short Qty { get; set; }
     }
 
