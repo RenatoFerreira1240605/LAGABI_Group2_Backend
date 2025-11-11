@@ -4,47 +4,47 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NeuroNexusBackend.Models
 {
-    /// <summary>
-    /// Catalog card definition used to build decks and spawns.
-    /// </summary>
+    /// <summary> Catalog card definition used to build decks and spawns.
     [Table("Cards")]
     public class Card
     {
-        /// <summary>
-        /// Primary key (stable integer id for a catalog item).
-        /// </summary>
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public long Id { get; set; }
+        public long Id { get; set; } // DB identity (bigint)
 
-        /// <summary>
-        /// Card display name.
-        /// </summary>
-        [Required]
-        [StringLength(64)]
-        public string Name { get; set; } = default!;
+        [Required, StringLength(64)]
+        public string Name { get; set; } = default!; // Display name, unique per Suit
 
-        /// <summary>
-        /// Suit taxonomy (Analytical|Creative|Structured|Social).
-        /// Stored as text for flexibility; validated by regex.
-        /// </summary>
-        [Required]
-        [RegularExpression("Analytical|Creative|Structured|Social")]
+        [Required] // One of: Analytical/Creative/Structured/Social (enforced in DB CHECK)
         public string Suit { get; set; } = default!;
 
-        /// <summary>
-        /// Rarity code (C|U|R|SR|UR).
-        /// </summary>
-        [Required]
-        [RegularExpression("C|U|R|SR|UR")]
+        [Required] // One of: Common/Rare/Unique/Legendary (enforced in DB CHECK)
         public string Rarity { get; set; } = default!;
 
-        /// <summary>
-        /// Scoring value used by game logic (1..5).
-        /// </summary>
-        [Required]
         [Range(1, 5)]
-        public short Points { get; set; }
+        public short Points { get; set; } // Value 1..5
+
+        [StringLength(200)]
+        public string? Ability { get; set; } // Human-readable rules text (optional)
+
+        [Required, StringLength(32)]
+        public string Trigger { get; set; } = "on_reveal"; // e.g., on_reveal, on_points, once_per_game, ...
+
+        [Required, StringLength(32)]
+        public string Effect { get; set; } = "none"; // e.g., draw, gain_points, reduce_burnout, ...
+
+        public short? Amount { get; set; } // numeric delta (e.g., +1/-1), null if N/A
+
+        [StringLength(16)]
+        public string? Target { get; set; } // self/opponent/both/deck/hand/...
+
+        public bool OncePerGame { get; set; } // true if limited-use effect
+
+        /// <summary>
+        /// Optional JSON payload with extra conditions/parameters.
+        /// Stored as JSONB in PostgreSQL.
+        /// </summary>
+        public string? AbilityJson { get; set; }
     }
 
 }

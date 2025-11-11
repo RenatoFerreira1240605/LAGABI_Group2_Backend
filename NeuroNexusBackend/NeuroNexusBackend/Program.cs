@@ -29,12 +29,14 @@ namespace NeuroNexusBackend
             builder.Services.AddScoped<IUserRepo, UserRepo>();
             builder.Services.AddScoped<IDeckRepo, DeckRepo>();
             builder.Services.AddScoped<ISpawnRepo, SpawnRepo>();
+            builder.Services.AddScoped<ICardRepo, CardRepo>();
 
             // Services
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IDeckService, DeckService>();
             builder.Services.AddScoped<ISpawnService, SpawnService>();
             builder.Services.AddScoped<IMmrService, MmrService>();
+            builder.Services.AddScoped<ICardService, CardService>();
 
             // Controllers + Swagger
             builder.Services.AddControllers();
