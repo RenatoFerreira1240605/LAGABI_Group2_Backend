@@ -10,7 +10,7 @@ namespace NeuroNexusBackend.DTOs
     {
         /// <summary>Catalog id of the card.</summary>
         [Range(1, int.MaxValue)]
-        public int CardId { get; set; }
+        public long CardId { get; set; }
 
         /// <summary>Number of copies for this card in the deck (typical cap 1..4).</summary>
         [Range(1, 4)]
