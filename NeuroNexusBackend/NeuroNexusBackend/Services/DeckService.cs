@@ -6,32 +6,24 @@ namespace NeuroNexusBackend.Services
     /// <summary>Deck service: validate and orchestrate repository operations.</summary>
     public class DeckService : IDeckService
     {
-        private readonly IDeckRepo _decks;
-        public DeckService(IDeckRepo decks) => _decks = decks;
-
+        private readonly IDeckRepo _repo;
         public async Task<long> CreateAsync(long userId, DeckCreateRequestDTO req, CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(req.Name))
-                throw new ArgumentException("Deck name is required");
-            if (req.Cards is null || req.Cards.Count == 0)
-                throw new ArgumentException("Deck must contain at least one card");
-
-            var deck = await _decks.CreateAsync(
-                userId,
-                req.Name.Trim(),
-                req.Cards.Select(c => (c.CardId, c.Qty)),
-                ct);
-
+            var tuples = req.Cards.Select(x => (x.CardId, (short)(x.Qty <= 0 ? 1 : x.Qty)));
+            var deck = await _repo.CreateAsync(userId, req.Name, tuples, ct);
             return deck.Id;
         }
 
         public async Task<List<DeckResponseDTO>> ListAsync(long userId, CancellationToken ct)
         {
-            var list = await _decks.ListByUserAsync(userId, ct);
-            var result = new List<DeckResponseDTO>(list.Count);
-            foreach (var d in list)
-                result.Add(new DeckResponseDTO(d.Id, d.Name, d.CreatedAt));
-            return result;
+            var decks = await _repo.ListByUserAsync(userId, ct);
+            return decks.Select(d => new DeckResponseDTO(d.Id, d.Name, d.CreatedAt)).ToList();
         }
+
+        public Task<bool> AddCardAsync(long userId, long deckId, long cardId, short qty, CancellationToken ct)
+            => _repo.AddCardAsync(userId, deckId, cardId, qty, ct);
+
+        public Task<bool> RemoveCardAsync(long userId, long deckId, long cardId, short qty, CancellationToken ct)
+            => _repo.RemoveCardAsync(userId, deckId, cardId, qty, ct);
     }
 }
