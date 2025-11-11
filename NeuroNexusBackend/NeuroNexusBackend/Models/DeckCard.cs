@@ -14,8 +14,9 @@ namespace NeuroNexusBackend.Models
         /// <summary>
         /// Deck identifier (part of composite PK).
         /// </summary>
-        [Required]
-        public Guid DeckId { get; set; }
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long DeckId { get; set; }
 
         /// <summary>
         /// Navigation to the deck (optional on write).
@@ -26,7 +27,7 @@ namespace NeuroNexusBackend.Models
         /// Card identifier (part of composite PK).
         /// </summary>
         [Required]
-        public int CardId { get; set; }
+        public long CardId { get; set; }
 
         /// <summary>
         /// Navigation to the card (optional on write).

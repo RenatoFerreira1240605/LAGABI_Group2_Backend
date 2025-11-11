@@ -11,7 +11,8 @@ namespace NeuroNexusBackend.Models
     public class CardReview
     {
         [Key]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long Id { get; set; }
 
         [Required]
         public Guid UserCardId { get; set; }

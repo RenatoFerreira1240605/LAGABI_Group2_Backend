@@ -11,7 +11,8 @@ namespace NeuroNexusBackend.Models
     public class CardTemplate
     {
         [Key]
-        public int Id { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long Id { get; set; }
 
         [Required, StringLength(48)]
         public string Name { get; set; } = default!;

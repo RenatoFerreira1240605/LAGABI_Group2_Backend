@@ -13,10 +13,12 @@ namespace NeuroNexusBackend.Models
     [Index(nameof(MatchId))]
     public class TelemetryEvent
     {
-        [Key] public Guid Id { get; set; } = Guid.NewGuid();
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long Id { get; set; }
 
-        public Guid? MatchId { get; set; }
-        public Guid? UserId { get; set; }
+        public long? MatchId { get; set; }
+        public long? UserId { get; set; }
 
         /// <summary>Event kind, e.g., "queue.enter", "queue.match", "turn.resolve".</summary>
         [Required, StringLength(48)]

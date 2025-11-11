@@ -14,7 +14,8 @@ namespace NeuroNexusBackend.Models
         /// Primary key (stable integer id for a catalog item).
         /// </summary>
         [Key]
-        public int Id { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long Id { get; set; }
 
         /// <summary>
         /// Card display name.

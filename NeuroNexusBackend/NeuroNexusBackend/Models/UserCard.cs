@@ -13,11 +13,12 @@ namespace NeuroNexusBackend.Models
     public class UserCard
     {
         [Key]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long Id { get; set; };
 
         /// <summary>Owner of this card design.</summary>
         [Required]
-        public Guid OwnerId { get; set; }
+        public long OwnerId { get; set; }
 
         /// <summary>Human-friendly title of the card.</summary>
         [Required, StringLength(64)]

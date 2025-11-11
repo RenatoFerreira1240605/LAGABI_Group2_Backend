@@ -11,9 +11,11 @@ namespace NeuroNexusBackend.Models
     [Index(nameof(UserId), nameof(Mode), IsUnique = true)]
     public class MmrRating
     {
-        [Key] public Guid Id { get; set; } = Guid.NewGuid();
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long Id { get; set; }
 
-        [Required] public Guid UserId { get; set; }
+        [Required] public long UserId { get; set; }
 
         /// <summary>Game mode id (e.g., "pvp1v1").</summary>
         [Required, StringLength(32)]

@@ -11,12 +11,14 @@ namespace NeuroNexusBackend.Models
     [Index(nameof(Status))]
     public class Match
     {
-        [Key] public Guid Id { get; set; } = Guid.NewGuid();
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long Id { get; set; }
 
         [Required] public string Mode { get; set; } = "pvp1v1";
 
-        [Required] public Guid Player1Id { get; set; }
-        [Required] public Guid Player2Id { get; set; }
+        [Required] public long Player1Id { get; set; }
+        [Required] public long Player2Id { get; set; }
 
         /// <summary>queued|started|finished|abandoned</summary>
         [Required, RegularExpression("queued|started|finished|abandoned")]
