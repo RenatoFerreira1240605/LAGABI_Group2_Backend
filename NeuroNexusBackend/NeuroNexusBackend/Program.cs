@@ -43,11 +43,12 @@ namespace NeuroNexusBackend
 
             var app = builder.Build();
 
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+
+            app.UseSwagger();
+            app.UseSwaggerUI();
+
+            app.MapGet("/", () => Results.Redirect("/swagger"));
+
 
             app.UseHttpsRedirection();
             app.UseAuthorization();
