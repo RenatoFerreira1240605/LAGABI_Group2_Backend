@@ -25,7 +25,7 @@ namespace NeuroNexusBackend.Models
         public string Title { get; set; } = default!;
 
         /// <summary>Reference to a template (baseline rules/budget).</summary>
-        public int? TemplateId { get; set; }
+        public long? TemplateId { get; set; }
 
         /// <summary>Suit taxonomy like official cards.</summary>
         [Required, RegularExpression("Analytical|Creative|Structured|Social")]

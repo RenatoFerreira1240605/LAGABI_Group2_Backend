@@ -11,21 +11,20 @@ namespace NeuroNexusBackend.Repos
     /// EF Core implementation of ISpawnRepository.
     /// Uses PostGIS proximity query (ST_DWithin) for nearby search.
     /// </summary>
-    public class SpawnRepo
+    public class SpawnRepo : ISpawnRepo
     {
         private readonly AppDbContext _db;
         private readonly GeometryFactory _gf = NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
 
         public SpawnRepo(AppDbContext db) => _db = db;
 
-        public async Task<Spawn> CreateAsync(double lat, double lon, int? cardId, DateTime? expiresAt, CancellationToken ct)
+        public async Task<Spawn> CreateAsync(double lat, double lon, long? cardId, DateTime? expiresAt, CancellationToken ct)
         {
-            // Store location as WGS84 (lon,lat)
             var p = _gf.CreatePoint(new Coordinate(lon, lat));
             var s = new Spawn { Location = p, CardId = cardId, ExpiresAt = expiresAt, Status = "active" };
             _db.Spawns.Add(s);
             await _db.SaveChangesAsync(ct);
-            return s;
+            return s; // <- devolve a entidade com Id preenchido
         }
 
         public async Task<List<Spawn>> NearbyAsync(double lat, double lon, int radiusM, CancellationToken ct)
@@ -42,7 +41,7 @@ namespace NeuroNexusBackend.Repos
             ).AsNoTracking().ToListAsync(ct);
         }
 
-        public async Task<bool> ClaimAsync(Guid id, CancellationToken ct)
+        public async Task<bool> ClaimAsync(long id, CancellationToken ct)
         {
             // Optimistic update to move active -> claimed
             var s = await _db.Spawns.FirstOrDefaultAsync(x => x.Id == id && x.Status == "active", ct);
@@ -52,7 +51,7 @@ namespace NeuroNexusBackend.Repos
             return true;
         }
 
-        public async Task<bool> CatchAsync(Guid id, CancellationToken ct)
+        public async Task<bool> CatchAsync(long id, CancellationToken ct)
         {
             // Allow catching from active or claimed
             var s = await _db.Spawns.FirstOrDefaultAsync(x => x.Id == id && (x.Status == "active" || x.Status == "claimed"), ct);

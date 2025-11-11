@@ -13,7 +13,7 @@ namespace NeuroNexusBackend.Repos
         private readonly AppDbContext _db;
         public DeckRepo(AppDbContext db) => _db = db;
 
-        public async Task<Deck> CreateAsync(Guid userId, string name, IEnumerable<(int cardId, short qty)> cards, CancellationToken ct)
+        public async Task<Deck> CreateAsync(long userId, string name, IEnumerable<(long cardId, short qty)> cards, CancellationToken ct)
         {
             // Create deck header
             var deck = new Deck { UserId = userId, Name = name };
@@ -28,13 +28,13 @@ namespace NeuroNexusBackend.Repos
             return deck;
         }
 
-        public Task<List<Deck>> ListByUserAsync(Guid userId, CancellationToken ct) =>
+        public Task<List<Deck>> ListByUserAsync(long userId, CancellationToken ct) =>
             _db.Decks.Where(x => x.UserId == userId)
                      .OrderByDescending(x => x.CreatedAt)
                      .AsNoTracking()
                      .ToListAsync(ct);
 
-        public Task<Deck?> GetAsync(Guid deckId, CancellationToken ct) =>
+        public Task<Deck?> GetAsync(long deckId, CancellationToken ct) =>
             _db.Decks.Include(d => d.Cards)
                      .ThenInclude(dc => dc.Card)
                      .FirstOrDefaultAsync(d => d.Id == deckId, ct);

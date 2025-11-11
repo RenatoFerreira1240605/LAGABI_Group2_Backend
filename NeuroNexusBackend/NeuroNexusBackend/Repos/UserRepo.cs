@@ -1,4 +1,5 @@
-﻿using NeuroNexusBackend.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using NeuroNexusBackend.Data;
 using NeuroNexusBackend.Models;
 
 namespace NeuroNexusBackend.Repos
@@ -21,7 +22,7 @@ namespace NeuroNexusBackend.Repos
             return u;
         }
 
-        public Task<User?> GetAsync(Guid id, CancellationToken ct) =>
+        public Task<User?> GetAsync(long id, CancellationToken ct) =>
             _db.Users.FirstOrDefaultAsync(x => x.Id == id, ct);
     }
 }

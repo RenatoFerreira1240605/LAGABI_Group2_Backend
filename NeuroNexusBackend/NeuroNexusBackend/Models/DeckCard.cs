@@ -14,8 +14,7 @@ namespace NeuroNexusBackend.Models
         /// <summary>
         /// Deck identifier (part of composite PK).
         /// </summary>
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [Required]
         public long DeckId { get; set; }
 
         /// <summary>

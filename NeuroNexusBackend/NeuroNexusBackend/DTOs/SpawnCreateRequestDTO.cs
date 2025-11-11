@@ -17,7 +17,7 @@ namespace NeuroNexusBackend.DTOs
         public double Lon { get; set; }
 
         /// <summary>Optional card to preview/grant at this spawn.</summary>
-        [Range(1, int.MaxValue)]
+        [Range(1, long.MaxValue)]
         public long? CardId { get; set; }
 
         /// <summary>Optional expiration timestamp (UTC).</summary>

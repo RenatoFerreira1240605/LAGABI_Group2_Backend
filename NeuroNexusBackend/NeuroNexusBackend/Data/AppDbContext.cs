@@ -100,9 +100,12 @@ namespace NeuroNexusBackend.Data
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Id).UseIdentityByDefaultColumn();
 
-                // Spatial column in WGS84 (lon,lat)
-                e.Property(x => x.Location).HasSrid(4326);
-                e.HasIndex(x => x.Location).HasMethod("GIST"); // spatial index
+                // SRID 4326 (WGS84) e tipo Point
+                e.Property(x => x.Location)
+                 .HasColumnType("geometry(Point,4326)");
+
+                // Índice espacial GiST
+                e.HasIndex(x => x.Location).HasMethod("GIST");
 
                 e.HasIndex(x => x.Status);
                 e.HasIndex(x => x.ExpiresAt);
@@ -140,5 +143,53 @@ namespace NeuroNexusBackend.Data
 
             b.Entity<CardReview>(e =>
             {
-            e.HasKey(x => x.Id);
-            e.Property(x => x.Id).UseIdentityByDef
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Id).UseIdentityByDefaultColumn();
+                e.Property(x => x.Outcome).HasMaxLength(16);
+                e.Property(x => x.Note).HasMaxLength(500);
+
+                // Optional FKs (uncomment if you want referential integrity here)
+                // e.HasOne<UserCard>().WithMany().HasForeignKey(x => x.UserCardId).OnDelete(DeleteBehavior.Cascade);
+                // e.HasOne<User>().WithMany().HasForeignKey(x => x.ReviewerId).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // =========================
+            // DDA / Hidden MMR
+            // =========================
+            b.Entity<MmrRating>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Id).UseIdentityByDefaultColumn();
+
+                e.HasIndex(x => new { x.UserId, x.Mode }).IsUnique();
+
+                e.Property(x => x.Mode).HasMaxLength(32).HasDefaultValue("pvp1v1");
+                e.Property(x => x.Rating).HasDefaultValue(1000);
+                e.Property(x => x.Deviation).HasDefaultValue(350);
+                e.Property(x => x.Volatility).HasDefaultValue(120);
+            });
+
+            b.Entity<Match>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Id).UseIdentityByDefaultColumn();
+
+                e.HasIndex(x => x.Status);
+                e.Property(x => x.Mode).HasMaxLength(32).HasDefaultValue("pvp1v1");
+                e.Property(x => x.Status).HasMaxLength(16).HasDefaultValue("queued");
+            });
+
+            b.Entity<TelemetryEvent>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Id).UseIdentityByDefaultColumn();
+
+                e.HasIndex(x => x.MatchId);
+                e.HasIndex(x => x.UserId);
+
+                e.Property(x => x.Kind).HasMaxLength(48);
+                e.Property(x => x.PayloadJson).HasColumnType("text");
+            });
+        }
+    }
+}
