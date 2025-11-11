@@ -6,13 +6,9 @@ using NeuroNexusBackend.Services;
 
 namespace NeuroNexusBackend.Controllers
 {
-
-
-    /// <summary>
-    /// Hidden MMR endpoints (simple Elo updates).
-    /// </summary>
-    [Route("api/[controller]")]
+    /// <summary>Hidden MMR endpoints (simple Elo updates).</summary>
     [ApiController]
+    [Route("api/[controller]")]
     public class MmrController : ControllerBase
     {
         private readonly IMmrService _mmr;
@@ -25,15 +21,14 @@ namespace NeuroNexusBackend.Controllers
         }
 
         /// <summary>Get current hidden rating for a user in a mode.</summary>
-        [HttpGet("{userId:guid}")]
-        public async Task<ActionResult<object>> Get([FromRoute] Guid userId, [FromQuery] string mode = "pvp1v1", CancellationToken ct = default)
+        [HttpGet("{userId:long}")]
+        public async Task<ActionResult<object>> Get([FromRoute] long userId, [FromQuery] string mode = "pvp1v1", CancellationToken ct = default)
             => Ok(new { rating = await _mmr.GetAsync(userId, mode, ct) });
 
         /// <summary>Resolve a match and update both players' ratings.</summary>
         [HttpPost("match/resolve")]
         public async Task<ActionResult<object>> Resolve([FromBody] ResolveReq req, CancellationToken ct)
         {
-            // Store a minimal match record for fairness analysis.
             var match = new Match
             {
                 Mode = req.Mode,
@@ -56,6 +51,14 @@ namespace NeuroNexusBackend.Controllers
             return Ok(new { ok = true, match_id = match.Id });
         }
 
-        public record ResolveReq(long P1, long P2, string Mode, int Winner, short P1Points, short P2Points);
+        public struct ResolveReq
+        {
+            public long P1 { get; set; }
+            public long P2 { get; set; }
+            public string Mode { get; set; }
+            public int Winner { get; set; }
+            public short P1Points { get; set; }
+            public short P2Points { get; set; }
+        }
     }
 }
