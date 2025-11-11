@@ -43,16 +43,22 @@ namespace NeuroNexusBackend
 
             var app = builder.Build();
 
-
+            // Swagger SEMPRE (inclusive Production na Render)
             app.UseSwagger();
             app.UseSwaggerUI();
 
-            app.MapGet("/", () => Results.Redirect("/swagger"));
+            // CORS
+            app.UseCors();
 
+            // NÃO forçar HTTPS dentro do container na Render.
+            // Se quiseres manter em dev local:
+            // if (app.Environment.IsDevelopment()) app.UseHttpsRedirection();
+            // Caso contrário, remove:
+            /// app.UseHttpsRedirection();
 
-            app.UseHttpsRedirection();
             app.UseAuthorization();
             app.MapControllers();
+
 
             app.Run();
         }
