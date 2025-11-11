@@ -1,0 +1,48 @@
+﻿using Microsoft.EntityFrameworkCore;
+using NeuroNexusBackend.Models.NeuroNexus.Api.Models;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace NeuroNexusBackend.Models
+{
+    /// <summary>
+    /// Join entity between Deck and Card, containing the quantity per card.
+    /// Uses a composite key (DeckId, CardId) configured in the DbContext.
+    /// </summary>
+    [Table("DeckCards")]
+    public class DeckCard
+    {
+        /// <summary>
+        /// Deck identifier (part of composite PK).
+        /// </summary>
+        [Required]
+        [Comment("Foreign key to Decks.Id (part of composite PK).")]
+        public Guid DeckId { get; set; }
+
+        /// <summary>
+        /// Navigation to the deck (optional on write).
+        /// </summary>
+        public Deck? Deck { get; set; }
+
+        /// <summary>
+        /// Card identifier (part of composite PK).
+        /// </summary>
+        [Required]
+        [Comment("Foreign key to Cards.Id (part of composite PK).")]
+        public int CardId { get; set; }
+
+        /// <summary>
+        /// Navigation to the card (optional on write).
+        /// </summary>
+        public Card? Card { get; set; }
+
+        /// <summary>
+        /// Number of copies of this card in the deck (1..4 typical cap).
+        /// </summary>
+        [Required]
+        [Range(1, 4)]
+        [Comment("Quantity of the card inside the deck (1..4).")]
+        public short Qty { get; set; }
+    }
+
+}
