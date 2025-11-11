@@ -6,6 +6,7 @@
     /// </summary>
     public struct SpawnFeatureDTO
     {
+
         /// <summary>Spawn id (DB: BIGINT).</summary>
         public long Id { get; set; }
 
@@ -13,7 +14,7 @@
         public string Status { get; set; }
 
         /// <summary>Optional card id preview (may be null).</summary>
-        public int? CardPreview { get; set; }
+        public long? CardPreview { get; set; }
 
         /// <summary>Optional expiration (UTC).</summary>
         public DateTime? ExpiresAt { get; set; }
@@ -23,5 +24,6 @@
 
         /// <summary>Longitude (WGS84).</summary>
         public double Lon { get; set; }
+
     }
 }

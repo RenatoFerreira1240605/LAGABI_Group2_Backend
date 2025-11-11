@@ -7,6 +7,12 @@ namespace NeuroNexusBackend.DTOs
     /// </summary>
     public struct GuestResponseDTO
     {
+        public GuestResponseDTO(long id, string handle) : this()
+        {
+            UserId = id;
+            Handle = handle;
+        }
+
         /// <summary>Auto-increment user id (DB: BIGINT).</summary>
         [Required]
         public long UserId { get; set; }

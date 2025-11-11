@@ -8,6 +8,12 @@ namespace NeuroNexusBackend.DTOs
     /// </summary>
     public struct DeckResponseDTO
     {
+        public DeckResponseDTO(long id, string name, DateTime createdAt)
+        {
+            Id = id;
+            Name = name;
+            CreatedAt = createdAt;
+        }
         /// <summary>Deck id (DB: BIGINT).</summary>
         public long Id { get; set; }
 
