@@ -15,10 +15,10 @@ namespace NeuroNexusBackend.Models
         public long Id { get; set; }
 
         [Required]
-        public Guid UserCardId { get; set; }
+        public long UserCardId { get; set; }
 
         [Required]
-        public Guid ReviewerId { get; set; }  // could be an admin user
+        public long ReviewerId { get; set; }  // could be an admin user
 
         [Required]
         public DateTime ReviewedAt { get; set; } = DateTime.UtcNow;

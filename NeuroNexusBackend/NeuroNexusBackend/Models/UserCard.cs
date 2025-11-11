@@ -14,7 +14,7 @@ namespace NeuroNexusBackend.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public long Id { get; set; };
+        public long Id { get; set; }
 
         /// <summary>Owner of this card design.</summary>
         [Required]
