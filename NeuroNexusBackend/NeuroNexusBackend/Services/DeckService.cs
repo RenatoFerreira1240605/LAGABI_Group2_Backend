@@ -1,18 +1,16 @@
-﻿using NeuroNexusBackend.Repos;
+﻿using NeuroNexusBackend.DTOs;
+using NeuroNexusBackend.Repos;
 
 namespace NeuroNexusBackend.Services
 {
-    /// <summary>
-    /// Deck service: validate and orchestrate repository operations.
-    /// </summary>
+    /// <summary>Deck service: validate and orchestrate repository operations.</summary>
     public class DeckService : IDeckService
     {
         private readonly IDeckRepo _decks;
         public DeckService(IDeckRepo decks) => _decks = decks;
 
-        public async Task<Guid> CreateAsync(Guid userId, DeckCreateRequest req, CancellationToken ct)
+        public async Task<long> CreateAsync(long userId, DeckCreateRequestDTO req, CancellationToken ct)
         {
-            // Simple guardrails (name must exist; total cards > 0)
             if (string.IsNullOrWhiteSpace(req.Name))
                 throw new ArgumentException("Deck name is required");
             if (req.Cards is null || req.Cards.Count == 0)
@@ -27,10 +25,13 @@ namespace NeuroNexusBackend.Services
             return deck.Id;
         }
 
-        public async Task<List<DeckResponse>> ListAsync(Guid userId, CancellationToken ct)
+        public async Task<List<DeckResponseDTO>> ListAsync(long userId, CancellationToken ct)
         {
             var list = await _decks.ListByUserAsync(userId, ct);
-            return list.Select(d => new DeckResponse(d.Id, d.Name, d.CreatedAt)).ToList();
+            var result = new List<DeckResponseDTO>(list.Count);
+            foreach (var d in list)
+                result.Add(new DeckResponseDTO(d.Id, d.Name, d.CreatedAt));
+            return result;
         }
     }
 }

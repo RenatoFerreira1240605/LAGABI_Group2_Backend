@@ -1,8 +1,10 @@
 ﻿
+using NeuroNexusBackend.DTOs;
+
 namespace NeuroNexusBackend.Services
 {
     public interface IAuthService
     {
-        Task<GuestResponse> CreateGuestAsync(GuestRequest req, CancellationToken ct);
+        Task<GuestResponseDTO> CreateGuestAsync(GuestRequestDTO req, CancellationToken ct);
     }
 }

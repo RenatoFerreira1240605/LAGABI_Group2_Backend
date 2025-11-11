@@ -1,9 +1,11 @@
 ﻿
+using NeuroNexusBackend.DTOs;
+
 namespace NeuroNexusBackend.Services
 {
     public interface IDeckService
     {
-        Task<Guid> CreateAsync(Guid userId, DeckCreateRequest req, CancellationToken ct);
-        Task<List<DeckResponse>> ListAsync(Guid userId, CancellationToken ct);
+        Task<long> CreateAsync(long userId, DeckCreateRequestDTO req, CancellationToken ct);
+        Task<List<DeckResponseDTO>> ListAsync(long userId, CancellationToken ct);
     }
 }

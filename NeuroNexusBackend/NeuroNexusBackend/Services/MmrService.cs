@@ -5,21 +5,19 @@ using NeuroNexusBackend.Models;
 namespace NeuroNexusBackend.Services
 {
 
-    /// <summary>
-    /// Hidden MMR using simple Elo updates with variable K.
-    /// </summary>
+    /// <summary>Hidden MMR using simple Elo updates with variable K.</summary>
     public class MmrService : IMmrService
     {
         private readonly AppDbContext _db;
         public MmrService(AppDbContext db) => _db = db;
 
-        public async Task<int> GetAsync(Guid userId, string mode, CancellationToken ct)
+        public async Task<int> GetAsync(long userId, string mode, CancellationToken ct)
         {
             var r = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == userId && x.Mode == mode, ct);
             return r?.Rating ?? 1000;
         }
 
-        public async Task EnsureAsync(Guid userId, string mode, CancellationToken ct)
+        public async Task EnsureAsync(long userId, string mode, CancellationToken ct)
         {
             var r = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == userId && x.Mode == mode, ct);
             if (r == null)
@@ -29,18 +27,22 @@ namespace NeuroNexusBackend.Services
             }
         }
 
-        public async Task UpdateAfterMatchAsync(Guid p1, Guid p2, string mode, int winner, CancellationToken ct)
+        public async Task UpdateAfterMatchAsync(long p1, long p2, string mode, int winner, CancellationToken ct)
         {
-            var r1 = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == p1 && x.Mode == mode, ct)
-                     ?? new MmrRating { UserId = p1, Mode = mode, Rating = 1000 };
-            var r2 = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == p2 && x.Mode == mode, ct)
-                     ?? new MmrRating { UserId = p2, Mode = mode, Rating = 1000 };
+            var r1 = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == p1 && x.Mode == mode, ct);
+            var r2 = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == p2 && x.Mode == mode, ct);
+
+            var createdR1 = false;
+            var createdR2 = false;
+
+            if (r1 == null) { r1 = new MmrRating { UserId = p1, Mode = mode, Rating = 1000 }; _db.MmrRatings.Add(r1); createdR1 = true; }
+            if (r2 == null) { r2 = new MmrRating { UserId = p2, Mode = mode, Rating = 1000 }; _db.MmrRatings.Add(r2); createdR2 = true; }
 
             // expected scores
             double e1 = 1.0 / (1.0 + Math.Pow(10, (r2.Rating - r1.Rating) / 400.0));
             double e2 = 1.0 / (1.0 + Math.Pow(10, (r1.Rating - r2.Rating) / 400.0));
 
-            // variable K: larger for low games played (approx via Deviation)
+            // variable K
             int k1 = r1.Deviation > 250 ? 40 : 24;
             int k2 = r2.Deviation > 250 ? 40 : 24;
 
@@ -53,7 +55,9 @@ namespace NeuroNexusBackend.Services
             r2.Deviation = Math.Max(100, r2.Deviation - 10);
             r1.UpdatedAt = r2.UpdatedAt = DateTime.UtcNow;
 
-            _db.MmrRatings.UpdateRange(r1, r2);
+            if (!createdR1) _db.MmrRatings.Update(r1);
+            if (!createdR2) _db.MmrRatings.Update(r2);
+
             await _db.SaveChangesAsync(ct);
         }
     }
