@@ -1,3 +1,12 @@
+using System;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite; // <- para UseNetTopologySuite()
+using NeuroNexusBackend.Data;
+using NeuroNexusBackend.Repos;
+using NeuroNexusBackend.Services;
 
 namespace NeuroNexusBackend
 {
@@ -7,16 +16,33 @@ namespace NeuroNexusBackend
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+            // Connection string: env DATABASE_URL > appsettings > fallback local
+            var conn = Environment.GetEnvironmentVariable("DATABASE_URL")
+                      ?? builder.Configuration.GetConnectionString("Default")
+                      ?? "Host=localhost;Port=5432;Database=neuronexus;Username=postgres;Password=postgres";
 
+            // DbContext: Npgsql + NetTopologySuite (spatial)
+            builder.Services.AddDbContext<AppDbContext>(opt =>
+                opt.UseNpgsql(conn, npgsql => npgsql.UseNetTopologySuite()));
+
+            // Repositories
+            builder.Services.AddScoped<IUserRepo, UserRepo>();
+            builder.Services.AddScoped<IDeckRepo, DeckRepo>();
+            builder.Services.AddScoped<ISpawnRepo, SpawnRepo>();
+
+            // Services
+            builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IDeckService, DeckService>();
+            builder.Services.AddScoped<ISpawnService, SpawnService>();
+            builder.Services.AddScoped<IMmrService, MmrService>();
+
+            // Controllers + Swagger
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -24,10 +50,7 @@ namespace NeuroNexusBackend
             }
 
             app.UseHttpsRedirection();
-
             app.UseAuthorization();
-
-
             app.MapControllers();
 
             app.Run();
