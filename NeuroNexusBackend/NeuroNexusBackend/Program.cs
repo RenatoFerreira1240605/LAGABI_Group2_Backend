@@ -1,12 +1,13 @@
-using System;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.EntityFrameworkCore;
-using Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite; // <- para UseNetTopologySuite()
+using NeuroNexusBackend.Config;
 using NeuroNexusBackend.Data;
 using NeuroNexusBackend.Repos;
 using NeuroNexusBackend.Services;
+using Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite; // <- para UseNetTopologySuite()
+using System;
 
 namespace NeuroNexusBackend
 {
@@ -21,8 +22,22 @@ namespace NeuroNexusBackend
                       builder.Configuration.GetConnectionString("Default")
                       ?? "Host=localhost;Port=5432;Database=neuronexus;Username=postgres;Password=postgres";
 
+            // GoogleAuth Configuration
+            builder.Services.Configure<GoogleDeviceOAuthOptions>(
+                builder.Configuration.GetSection("GoogleOAuth"));
+
+            // JWTConfiguration
+            builder.Services.Configure<JwtOptions>(
+            builder.Configuration.GetSection("Jwt"));
+
+            builder.Services.AddHttpClient(); // para usar HttpClient
+
+            // Registo dos serviços (mais abaixo vamos criar estas interfaces/classes)
+            builder.Services.AddScoped<IGoogleDeviceAuthService, GoogleDeviceAuthService>();
+            builder.Services.AddScoped<ITokenService, TokenService>();
+            
             // DbContext: Npgsql + NetTopologySuite (spatial)
-            builder.Services.AddDbContext<AppDbContext>(opt =>
+                        builder.Services.AddDbContext<AppDbContext>(opt =>
                 opt.UseNpgsql(conn, npgsql => npgsql.UseNetTopologySuite()));
 
             // Repositories
@@ -69,9 +84,8 @@ namespace NeuroNexusBackend
             app.UseCors();
 
             // NÃO forçar HTTPS dentro do container na Render.
-            // Se quiseres manter em dev local:
             // if (app.Environment.IsDevelopment()) app.UseHttpsRedirection();
-            // Caso contrário, remove:
+            // Caso contrário, remover:
             /// app.UseHttpsRedirection();
 
             app.UseAuthorization();

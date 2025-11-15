@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata; // UseIdentityByDefaultColumn
 using NeuroNexusBackend.Models;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata; // UseIdentityByDefaultColumn
+using System.Reflection.Emit;
 
 namespace NeuroNexusBackend.Data
 {
@@ -14,21 +15,22 @@ namespace NeuroNexusBackend.Data
 
         // ===== DbSets (tables) =====
         // Core domain
-        public DbSet<User> Users => Set<User>();
-        public DbSet<Card> Cards => Set<Card>();
-        public DbSet<Deck> Decks => Set<Deck>();
-        public DbSet<DeckCard> DeckCards => Set<DeckCard>();
-        public DbSet<Spawn> Spawns => Set<Spawn>();
+        public DbSet<User> Users { get; set; } = default!;
+        public DbSet<DeviceLoginRequest> DeviceLoginRequests { get; set; } = default!;
+        public DbSet<Card> Cards { get; set; } = default!;
+        public DbSet<Deck> Decks { get; set; } = default!;
+        public DbSet<DeckCard> DeckCards { get; set; } = default!;
+        public DbSet<Spawn> Spawns { get; set; } = default!;
 
         // Workshop (player-created cards)
-        public DbSet<UserCard> UserCards => Set<UserCard>();
-        public DbSet<CardTemplate> CardTemplates => Set<CardTemplate>();
-        public DbSet<CardReview> CardReviews => Set<CardReview>();
+        public DbSet<UserCard> UserCards { get; set; } = default!;
+        public DbSet<CardTemplate> CardTemplates { get; set; } = default!;
+        public DbSet<CardReview> CardReviews { get; set; } = default!;
 
         // DDA / Hidden MMR
-        public DbSet<MmrRating> MmrRatings => Set<MmrRating>();
-        public DbSet<Match> Matches => Set<Match>();
-        public DbSet<TelemetryEvent> TelemetryEvents => Set<TelemetryEvent>();
+        public DbSet<MmrRating> MmrRatings { get; set; } = default!;
+        public DbSet<Match> Matches { get; set; } = default!;
+        public DbSet<TelemetryEvent> TelemetryEvents { get; set; } = default!;
 
         /// <summary>
         /// Fluent configuration for tables, indexes, constraints and PostGIS.
@@ -55,7 +57,20 @@ namespace NeuroNexusBackend.Data
                 e.Property(x => x.ExternalSubject).HasMaxLength(256);
                 e.Property(x => x.Email).HasMaxLength(256);
                 e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
+
+                e.HasIndex(u => new { u.ExternalProvider, u.ExternalSubject })
+                    .IsUnique()
+                    .HasFilter("\"ExternalProvider\" IS NOT NULL AND \"ExternalSubject\" IS NOT NULL");
+
             });
+            // =========================
+            // Device Logins
+            // =========================
+            b.Entity<DeviceLoginRequest>()
+                .HasIndex(d => d.DeviceCode);
+
+            b.Entity<DeviceLoginRequest>()
+                .HasIndex(d => d.Status);
 
             // =========================
             // Cards (official catalog)

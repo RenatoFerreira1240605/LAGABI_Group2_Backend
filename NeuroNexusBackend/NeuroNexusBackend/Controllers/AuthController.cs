@@ -1,22 +1,44 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using NeuroNexusBackend.DTOs;
 using NeuroNexusBackend.Services;
 
 namespace NeuroNexusBackend.Controllers
 {
-
-    /// <summary>Authentication endpoints (guest creation).</summary>
     [ApiController]
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _auth;
-        public AuthController(IAuthService auth) => _auth = auth;
+        private readonly IGoogleDeviceAuthService _googleDeviceAuth;
 
-        /// <summary>Create a guest user for development/testing.</summary>
+        public AuthController(IAuthService auth, IGoogleDeviceAuthService googleDeviceAuth)
+        {
+            _auth = auth;
+            _googleDeviceAuth = googleDeviceAuth;
+        }
+
         [HttpPost("guest")]
-        public async Task<ActionResult<GuestResponseDTO>> CreateGuest([FromBody] GuestRequestDTO req, CancellationToken ct)
+        public async Task<ActionResult<GuestResponseDTO>> CreateGuest(
+            [FromBody] GuestRequestDTO req,
+            CancellationToken ct)
             => Ok(await _auth.CreateGuestAsync(req, ct));
+
+        // Novo: start do device flow
+        [HttpPost("google/device/start")]
+        public async Task<ActionResult<DeviceStartResponseDTO>> StartGoogleDeviceFlow(CancellationToken ct)
+        {
+            var result = await _googleDeviceAuth.StartAsync(ct);
+            return Ok(result);
+        }
+
+        // Novo: poll do device flow
+        [HttpGet("google/device/poll")]
+        public async Task<ActionResult<DevicePollResponseDTO>> PollGoogleDeviceFlow(
+            [FromQuery] Guid requestId,
+            CancellationToken ct)
+        {
+            var result = await _googleDeviceAuth.PollAsync(requestId, ct);
+            return Ok(result);
+        }
     }
 }

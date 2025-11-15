@@ -1,15 +1,11 @@
-﻿using NeuroNexusBackend.DTOs;
-using NeuroNexusBackend.Repos;
-using static NeuroNexusBackend.Services.AuthService;
+﻿using Microsoft.EntityFrameworkCore;
+using NeuroNexusBackend.Data;
+using NeuroNexusBackend.DTOs;
+using NeuroNexusBackend.Models;
 
 namespace NeuroNexusBackend.Services
 {
-    /// <summary>Auth service: creates guest users with unique handles.</summary>
-    using Microsoft.EntityFrameworkCore;
-    using NeuroNexusBackend.Data;
-    using NeuroNexusBackend.DTOs;
-    using NeuroNexusBackend.Models;
-
+    /// <summary>Auth service: creates guest users and external users (e.g. Google).</summary>
     public class AuthService : IAuthService
     {
         private readonly AppDbContext _db;
@@ -17,37 +13,102 @@ namespace NeuroNexusBackend.Services
 
         public async Task<GuestResponseDTO> CreateGuestAsync(GuestRequestDTO req, CancellationToken ct)
         {
-            var baseHandle = string.IsNullOrWhiteSpace(req.Handle) ? "user" : req.Handle!.Trim().ToLowerInvariant();
+            var baseHandle = string.IsNullOrWhiteSpace(req.Handle)
+                ? "user"
+                : req.Handle!.Trim().ToLowerInvariant();
+
+            var handle = await GenerateUniqueHandleAsync(baseHandle, ct);
+
+            var user = new User
+            {
+                Handle = handle,
+                DisplayName = string.IsNullOrWhiteSpace(req.DisplayName)
+                    ? handle
+                    : req.DisplayName!.Trim(),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _db.Users.Add(user);
+            await _db.SaveChangesAsync(ct);
+
+            return new GuestResponseDTO { UserId = user.Id, Handle = user.Handle };
+        }
+
+        /// <summary>
+        /// Get or create user for an external IdP (e.g. Google).
+        /// </summary>
+        public async Task<User> GetOrCreateExternalUserAsync(
+            string provider,
+            string subject,
+            string? email,
+            string? displayName,
+            CancellationToken ct)
+        {
+            // 1) Ver se já existe utilizador para este provider+subject
+            var user = await _db.Users
+                .FirstOrDefaultAsync(u =>
+                    u.ExternalProvider == provider &&
+                    u.ExternalSubject == subject, ct);
+
+            if (user != null)
+            {
+                // Atualiza dados básicos, se quiseres
+                var changed = false;
+
+                if (!string.IsNullOrWhiteSpace(email) && user.Email != email)
+                {
+                    user.Email = email;
+                    changed = true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(displayName) && user.DisplayName != displayName)
+                {
+                    user.DisplayName = displayName;
+                    changed = true;
+                }
+
+                if (changed)
+                    await _db.SaveChangesAsync(ct);
+
+                return user;
+            }
+
+            // 2) Não existe → criar novo utilizador
+            var baseHandle = $"user_{provider}";
+            var handle = await GenerateUniqueHandleAsync(baseHandle, ct);
+
+            user = new User
+            {
+                Handle = handle,
+                DisplayName = string.IsNullOrWhiteSpace(displayName) ? handle : displayName!.Trim(),
+                Email = email,
+                ExternalProvider = provider,
+                ExternalSubject = subject,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _db.Users.Add(user);
+            await _db.SaveChangesAsync(ct);
+
+            return user;
+        }
+
+        /// <summary>
+        /// Gera um handle único com sufixos numéricos se necessário (base, base2, base3...).
+        /// </summary>
+        private async Task<string> GenerateUniqueHandleAsync(string baseHandle, CancellationToken ct)
+        {
             const int maxRetries = 20;
 
             for (int i = 0; i < maxRetries; i++)
             {
                 var handle = i == 0 ? baseHandle : $"{baseHandle}{i + 1}";
-                if (await _db.Users.AnyAsync(u => u.Handle == handle, ct)) continue;
-
-                var user = new User
-                {
-                    Handle = handle,
-                    DisplayName = string.IsNullOrWhiteSpace(req.DisplayName) ? handle : req.DisplayName!.Trim(),
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _db.Users.Add(user);
-                try
-                {
-                    await _db.SaveChangesAsync(ct);
-                    return new GuestResponseDTO { UserId = user.Id, Handle = user.Handle };
-                }
-                catch (DbUpdateException)
-                {
-                    // colisão concorrente — tenta próximo sufixo
-                }
+                var exists = await _db.Users.AnyAsync(u => u.Handle == handle, ct);
+                if (!exists)
+                    return handle;
             }
 
             throw new InvalidOperationException("Could not generate a unique handle.");
         }
     }
 }
-
-
-

@@ -38,6 +38,10 @@ namespace NeuroNexusBackend.Models
 
         /// <summary>Creation timestamp (UTC).</summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        /// <summary>Last Login Timestamp (UTC).</summary>
+        public DateTime LastLoginAt { get; set; } = DateTime.UtcNow;
+
     }
 
 }
