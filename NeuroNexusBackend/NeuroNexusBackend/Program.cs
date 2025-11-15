@@ -1,13 +1,17 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using NeuroNexusBackend.Config;
 using NeuroNexusBackend.Data;
 using NeuroNexusBackend.Repos;
 using NeuroNexusBackend.Services;
 using Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite; // <- para UseNetTopologySuite()
 using System;
+using System.Text;
 
 namespace NeuroNexusBackend
 {
@@ -30,15 +34,44 @@ namespace NeuroNexusBackend
             builder.Services.Configure<JwtOptions>(
             builder.Configuration.GetSection("Jwt"));
 
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+                {
+                    var jwtSection = builder.Configuration.GetSection("Jwt");
+                    var secret = jwtSection.GetValue<string>("Secret");
+                    var issuer = jwtSection.GetValue<string>("Issuer");
+                    var audience = jwtSection.GetValue<string>("Audience");
+                
+                    var key = Encoding.UTF8.GetBytes(secret);
+                
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidIssuer = issuer,
+                
+                        ValidateAudience = true,
+                        ValidAudience = audience,
+                
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(key),
+                
+                        ValidateLifetime = true,
+                        ClockSkew = TimeSpan.FromMinutes(1) // margem pequena
+                    };
+                });
+
             builder.Services.AddHttpClient(); // para usar HttpClient
 
             // Registo dos serviços (mais abaixo vamos criar estas interfaces/classes)
             builder.Services.AddScoped<IGoogleDeviceAuthService, GoogleDeviceAuthService>();
             builder.Services.AddScoped<ITokenService, TokenService>();
-            
+
             // DbContext: Npgsql + NetTopologySuite (spatial)
-                        builder.Services.AddDbContext<AppDbContext>(opt =>
-                opt.UseNpgsql(conn, npgsql => npgsql.UseNetTopologySuite()));
+            builder.Services.AddDbContext<AppDbContext>(opt =>
+    opt.UseNpgsql(conn, npgsql => npgsql.UseNetTopologySuite()));
 
             // Repositories
             builder.Services.AddScoped<IUserRepo, UserRepo>();
@@ -58,20 +91,30 @@ namespace NeuroNexusBackend
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
-                c.AddSecurityDefinition("XUser", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "NeuroNexus API", Version = "v1" });
+
+                var jwtSecurityScheme = new OpenApiSecurityScheme
                 {
-                    Name = "X-User",
-                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-                    Description = "User ID (long) para dev"
-                });
-                c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-                {
-                    { new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-                        { Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                            { Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme, Id = "XUser" } },
-                    Array.Empty<string>() }
-                });
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                    Description = "Inserir apenas o token JWT (sem 'Bearer ' no início).",
+
+                    Reference = new OpenApiReference
+                    {
+                        Id = JwtBearerDefaults.AuthenticationScheme,
+                        Type = ReferenceType.SecurityScheme
+                    }
+                };
+
+                c.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
+
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        { jwtSecurityScheme, Array.Empty<string>() }
+    });
             });
 
             var app = builder.Build();
@@ -87,7 +130,8 @@ namespace NeuroNexusBackend
             // if (app.Environment.IsDevelopment()) app.UseHttpsRedirection();
             // Caso contrário, remover:
             /// app.UseHttpsRedirection();
-
+            /// 
+            app.UseAuthentication();   // IMPORTANTE: antes de UseAuthorization
             app.UseAuthorization();
             app.MapControllers();
 
