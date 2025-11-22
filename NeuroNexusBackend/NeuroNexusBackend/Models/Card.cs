@@ -45,6 +45,9 @@ namespace NeuroNexusBackend.Models
         /// Stored as JSONB in PostgreSQL.
         /// </summary>
         public string? AbilityJson { get; set; }
+        public long ExpansionId { get; set; }
+        public Expansion Expansion { get; set; } = null!;
+
     }
 
 }

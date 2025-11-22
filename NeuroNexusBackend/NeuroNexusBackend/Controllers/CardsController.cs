@@ -27,5 +27,7 @@ namespace NeuroNexusBackend.Controllers
             [FromQuery] string? trigger, [FromQuery] string? effect,
             CancellationToken ct = default)
             => Ok(await _svc.SearchAsync(suit, rarity, trigger, effect, ct));
+
+
     }
 }

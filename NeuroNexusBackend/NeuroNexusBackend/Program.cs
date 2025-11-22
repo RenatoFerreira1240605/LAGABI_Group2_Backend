@@ -85,6 +85,7 @@ namespace NeuroNexusBackend
             builder.Services.AddScoped<ISpawnService, SpawnService>();
             builder.Services.AddScoped<IMmrService, MmrService>();
             builder.Services.AddScoped<ICardService, CardService>();
+            builder.Services.AddScoped<IExpansionService, ExpansionService>();
 
             // Controllers + Swagger
             builder.Services.AddControllers();

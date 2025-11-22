@@ -14,6 +14,17 @@ namespace NeuroNexusBackend.Repos
         {
             foreach (var c in payload)
             {
+                var expansionCode = string.IsNullOrWhiteSpace(c.ExpansionCode)
+            ? "core"
+            : c.ExpansionCode.Trim();
+
+                var expansion = await _db.Expansions
+                    .SingleOrDefaultAsync(e => e.Code == expansionCode, ct);
+
+                if (expansion == null)
+                {
+                    throw new InvalidOperationException($"Expansion '{expansionCode}' does not exist.");
+                }
                 var existing = await _db.Cards
                     .FirstOrDefaultAsync(x => x.Name == c.Name && x.Suit == c.Suit, ct);
 
@@ -32,7 +43,9 @@ namespace NeuroNexusBackend.Repos
                         Amount = c.Amount,
                         Target = c.Target,
                         OncePerGame = c.OncePerGame,
-                        AbilityJson = c.AbilityJson
+                        AbilityJson = c.AbilityJson,
+                        ExpansionId = expansion.Id
+
                     };
                     _db.Cards.Add(existing);
                 }
@@ -47,6 +60,8 @@ namespace NeuroNexusBackend.Repos
                     existing.Target = c.Target;
                     existing.OncePerGame = c.OncePerGame;
                     existing.AbilityJson = c.AbilityJson;
+                    existing.ExpansionId = expansion.Id
+;
                 }
             }
             await _db.SaveChangesAsync(ct);
@@ -77,5 +92,6 @@ namespace NeuroNexusBackend.Repos
 
             return await q.OrderBy(c => c.Suit).ThenBy(c => c.Points).ThenBy(c => c.Name).ToListAsync(ct);
         }
+
     }
 }

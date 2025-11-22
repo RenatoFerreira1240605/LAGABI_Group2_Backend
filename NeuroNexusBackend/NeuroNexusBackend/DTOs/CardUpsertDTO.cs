@@ -13,5 +13,6 @@
         public string? Target { get; set; }       // self/opponent/both/deck/hand/...
         public bool OncePerGame { get; set; }     // true para “once per game”
         public string? AbilityJson { get; set; }  // condições extra arbitrárias
+        public string? ExpansionCode { get; set; }
     }
 }

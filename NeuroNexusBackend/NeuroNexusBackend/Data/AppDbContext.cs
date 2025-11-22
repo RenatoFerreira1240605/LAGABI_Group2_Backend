@@ -21,6 +21,10 @@ namespace NeuroNexusBackend.Data
         public DbSet<Deck> Decks { get; set; } = default!;
         public DbSet<DeckCard> DeckCards { get; set; } = default!;
         public DbSet<Spawn> Spawns { get; set; } = default!;
+        public DbSet<Expansion> Expansions { get; set; } = default!;
+        public DbSet<UserCardInventory> UserCardInventory { get; set; } = default!;
+        public DbSet<UserExpansion> UserExpansions { get; set; } = default!;
+
 
         // Workshop (player-created cards)
         public DbSet<UserCard> UserCards { get; set; } = default!;
@@ -94,6 +98,12 @@ namespace NeuroNexusBackend.Data
                 e.Property(x => x.Target).HasMaxLength(24);                  // Self / Opponent / Both
                 e.Property(x => x.OncePerGame).HasDefaultValue(false);
                 e.Property(x => x.AbilityJson).HasColumnType("text");        // JSON como string
+                e.Property(x => x.ExpansionId).IsRequired();
+
+                e.HasOne(x => x.Expansion)
+                    .WithMany()
+                    .HasForeignKey(x => x.ExpansionId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             // =========================
@@ -264,6 +274,69 @@ namespace NeuroNexusBackend.Data
 
                 e.HasIndex(x => x.MatchId);
                 e.HasIndex(x => x.UserId);
+            });
+
+            // =========================
+            // Expansions
+            // =========================
+            b.Entity<Expansion>(e =>
+            {
+                e.ToTable("Expansions");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Id).UseIdentityByDefaultColumn();
+
+                e.Property(x => x.Code).HasMaxLength(50).IsRequired();
+                e.HasIndex(x => x.Code).IsUnique();
+
+                e.Property(x => x.Name).HasMaxLength(100).IsRequired();
+                e.Property(x => x.IsCore).HasDefaultValue(false);
+
+                // índice opcional para garantir apenas um Core
+                e.HasIndex(x => x.IsCore)
+                    .HasDatabaseName("UX_Expansions_SingleCore")
+                    .IsUnique()
+                    .HasFilter("\"IsCore\" = TRUE");
+            });
+            // =========================
+            // UserCardInventory (cartas oficiais por jogador)
+            // =========================
+            b.Entity<UserCardInventory>(e =>
+            {
+                e.ToTable("UserCardInventory");
+                e.HasKey(x => new { x.UserId, x.CardId });
+
+                e.Property(x => x.Quantity).HasDefaultValue((short)0);
+                e.HasCheckConstraint("CK_UserCardInventory_Quantity", "\"Quantity\" BETWEEN 0 AND 4");
+
+                e.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(x => x.Card)
+                    .WithMany()
+                    .HasForeignKey(x => x.CardId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+            // =========================
+            // UserExpansions (DLC por utilizador)
+            // =========================
+            b.Entity<UserExpansion>(e =>
+            {
+                e.ToTable("UserExpansions");
+                e.HasKey(x => new { x.UserId, x.ExpansionId });
+
+                e.Property(x => x.PurchasedAt).HasDefaultValueSql("now()");
+
+                e.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(x => x.Expansion)
+                    .WithMany()
+                    .HasForeignKey(x => x.ExpansionId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
 
