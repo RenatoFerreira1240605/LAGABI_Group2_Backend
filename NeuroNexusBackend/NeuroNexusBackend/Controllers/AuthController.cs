@@ -17,11 +17,11 @@ namespace NeuroNexusBackend.Controllers
             _googleDeviceAuth = googleDeviceAuth;
         }
 
-        [HttpPost("guest")]
-        public async Task<ActionResult<GuestResponseDTO>> CreateGuest(
-            [FromBody] GuestRequestDTO req,
-            CancellationToken ct)
-            => Ok(await _auth.CreateGuestAsync(req, ct));
+        //[HttpPost("guest")]
+        //public async Task<ActionResult<GuestResponseDTO>> CreateGuest(
+        //    [FromBody] GuestRequestDTO req,
+        //    CancellationToken ct)
+        //    => Ok(await _auth.CreateGuestAsync(req, ct));
 
         // Novo: start do device flow
         [HttpPost("google/device/start")]

@@ -71,7 +71,7 @@ namespace NeuroNexusBackend
 
             // DbContext: Npgsql + NetTopologySuite (spatial)
             builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseNpgsql(conn, npgsql => npgsql.UseNetTopologySuite()));
+                opt.UseNpgsql(conn, npgsql => npgsql.UseNetTopologySuite()));
 
             // Repositories
             builder.Services.AddScoped<IUserRepo, UserRepo>();
