@@ -6,7 +6,7 @@ namespace NeuroNexusBackend.DTOs
     /// <summary>
     /// Single card entry inside a deck (card id + quantity).
     /// </summary>
-    public struct DeckCardItemDTO
+    public struct DeckCardDTO
     {
         /// <summary>Catalog id of the card.</summary>
         [Range(1, int.MaxValue)]

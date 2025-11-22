@@ -38,8 +38,7 @@ namespace NeuroNexusBackend.Repos
 
             await _db.SaveChangesAsync(ct);
             return deck;
-        }
-
+        }        
 
         public Task<List<Deck>> ListByUserAsync(long userId, CancellationToken ct) =>
             _db.Decks.Where(x => x.UserId == userId)
@@ -84,6 +83,25 @@ namespace NeuroNexusBackend.Repos
 
             await _db.SaveChangesAsync(ct);
             return true;
+        }
+        public Task<List<Deck>> GetDecksWithCardsAsync(long userId, CancellationToken ct)
+        {
+            return _db.Decks
+               .AsNoTracking()
+               .Include(d => d.Cards)
+               .Where(d => d.UserId == userId)
+               .OrderBy(d => d.Id)
+               .ToListAsync(ct);
+        }
+
+        public Task<List<Deck>> GetDecksWithCardsAsync(long userId, long deckId, CancellationToken ct)
+        {
+            return _db.Decks
+               .AsNoTracking()
+               .Include(d => d.Cards)
+               .Where(d => d.UserId == userId && d.Id==deckId)
+               .OrderBy(d => d.Id)
+               .ToListAsync(ct);
         }
     }
 }

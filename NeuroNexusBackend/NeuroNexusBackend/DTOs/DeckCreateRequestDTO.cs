@@ -15,6 +15,6 @@ namespace NeuroNexusBackend.DTOs
 
         /// <summary>List of card entries (card id + quantity) to compose the deck.</summary>
         [Required, MinLength(1)]
-        public List<DeckCardItemDTO> Cards { get; set; }
+        public List<DeckCardDTO> Cards { get; set; }
     }
 }
