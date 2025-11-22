@@ -22,12 +22,12 @@ namespace NeuroNexusBackend.Controllers
 
         /// <summary>Get current hidden rating for a user in a mode.</summary>
         [HttpGet("{userId:long}")]
-        public async Task<ActionResult<object>> Get([FromRoute] long userId, [FromQuery] string mode = "pvp1v1", CancellationToken ct = default)
-            => Ok(new { rating = await _mmr.GetAsync(userId, mode, ct) });
+        public async Task<ActionResult<object>> Get([FromRoute] long userId, [FromQuery] string mode = "pvp1v1")
+            => Ok(new { rating = await _mmr.GetAsync(userId, mode) });
 
         /// <summary>Resolve a match and update both players' ratings.</summary>
         [HttpPost("match/resolve")]
-        public async Task<ActionResult<object>> Resolve([FromBody] ResolveReq req, CancellationToken ct)
+        public async Task<ActionResult<object>> Resolve([FromBody] ResolveReq req)
         {
             var match = new Match
             {
@@ -41,13 +41,13 @@ namespace NeuroNexusBackend.Controllers
                 Winner = req.Winner,
                 P1Points = req.P1Points,
                 P2Points = req.P2Points,
-                P1RatingStart = await _mmr.GetAsync(req.P1, req.Mode, ct),
-                P2RatingStart = await _mmr.GetAsync(req.P2, req.Mode, ct)
+                P1RatingStart = await _mmr.GetAsync(req.P1, req.Mode),
+                P2RatingStart = await _mmr.GetAsync(req.P2, req.Mode)
             };
             _db.Matches.Add(match);
-            await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync();
 
-            await _mmr.UpdateAfterMatchAsync(req.P1, req.P2, req.Mode, req.Winner, ct);
+            await _mmr.UpdateAfterMatchAsync(req.P1, req.P2, req.Mode, req.Winner);
             return Ok(new { ok = true, match_id = match.Id });
         }
 

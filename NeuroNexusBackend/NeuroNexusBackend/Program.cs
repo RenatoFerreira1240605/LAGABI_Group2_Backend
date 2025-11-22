@@ -78,6 +78,7 @@ namespace NeuroNexusBackend
             builder.Services.AddScoped<IDeckRepo, DeckRepo>();
             builder.Services.AddScoped<ISpawnRepo, SpawnRepo>();
             builder.Services.AddScoped<ICardRepo, CardRepo>();
+            builder.Services.AddScoped<IUserRepo, UserRepo>();
 
             // Services
             builder.Services.AddScoped<IAuthService, AuthService>();
@@ -86,6 +87,7 @@ namespace NeuroNexusBackend
             builder.Services.AddScoped<IMmrService, MmrService>();
             builder.Services.AddScoped<ICardService, CardService>();
             builder.Services.AddScoped<IExpansionService, ExpansionService>();
+            builder.Services.AddScoped<IUserService, UserService>();
 
             // Controllers + Swagger
             builder.Services.AddControllers();
@@ -94,28 +96,6 @@ namespace NeuroNexusBackend
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "NeuroNexus API", Version = "v1" });
 
-                var jwtSecurityScheme = new OpenApiSecurityScheme
-                {
-                    Scheme = "bearer",
-                    BearerFormat = "JWT",
-                    Name = "Authorization",
-                    In = ParameterLocation.Header,
-                    Type = SecuritySchemeType.Http,
-                    Description = "Inserir apenas o token JWT (sem 'Bearer ' no início).",
-
-                    Reference = new OpenApiReference
-                    {
-                        Id = JwtBearerDefaults.AuthenticationScheme,
-                        Type = ReferenceType.SecurityScheme
-                    }
-                };
-
-                c.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
-
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        { jwtSecurityScheme, Array.Empty<string>() }
-    });
             });
 
             var app = builder.Build();

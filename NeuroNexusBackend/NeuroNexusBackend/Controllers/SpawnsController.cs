@@ -16,22 +16,22 @@ namespace NeuroNexusBackend.Controllers
         public SpawnsController(ISpawnService svc) => _svc = svc;
 
         [HttpPost]
-        public async Task<ActionResult<object>> Create([FromBody] SpawnCreateRequestDTO body, CancellationToken ct)
+        public async Task<ActionResult<object>> Create([FromBody] SpawnCreateRequestDTO body)
         {
-            var id = await _svc.CreateAsync(body, ct);
+            var id = await _svc.CreateAsync(body);
             return Ok(new { spawn_id = id });
         }
 
         [HttpGet("nearby")]
-        public async Task<ActionResult<NearbyResponseDTO>> Nearby([FromQuery] double lat, [FromQuery] double lon, [FromQuery] int radiusM = 200, CancellationToken ct = default)
-            => Ok(await _svc.NearbyAsync(lat, lon, radiusM, ct));
+        public async Task<ActionResult<NearbyResponseDTO>> Nearby([FromQuery] double lat, [FromQuery] double lon, [FromQuery] int radiusM = 200)
+            => Ok(await _svc.NearbyAsync(lat, lon, radiusM));
 
         [HttpPost("{id:long}/claim")]
-        public async Task<ActionResult<object>> Claim([FromRoute] long id, CancellationToken ct)
-            => await _svc.ClaimAsync(id, ct) ? Ok(new { ok = true }) : Conflict();
+        public async Task<ActionResult<object>> Claim([FromRoute] long id)
+            => await _svc.ClaimAsync(id) ? Ok(new { ok = true }) : Conflict();
 
         [HttpPost("{id:long}/catch")]
-        public async Task<ActionResult<object>> Catch([FromRoute] long id, CancellationToken ct)
-            => await _svc.CatchAsync(id, ct) ? Ok(new { ok = true }) : NotFound();
+        public async Task<ActionResult<object>> Catch([FromRoute] long id)
+            => await _svc.CatchAsync(id) ? Ok(new { ok = true }) : NotFound();
     }
 }

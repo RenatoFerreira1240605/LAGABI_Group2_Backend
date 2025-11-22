@@ -19,10 +19,10 @@ namespace NeuroNexusBackend.Controllers
                
 
         [HttpPost]
-        public async Task<ActionResult<object>> Create([Required]long userId, [FromBody] DeckCreateRequestDTO body, CancellationToken ct)
+        public async Task<ActionResult<object>> Create([Required]long userId, [FromBody] DeckCreateRequestDTO body)
         {
             
-            var id = await _svc.CreateAsync(userId, body, ct);
+            var id = await _svc.CreateAsync(userId, body);
             return Ok(new { deck_id = id });
         }
         [HttpGet("UserDeckList")]
@@ -30,27 +30,27 @@ namespace NeuroNexusBackend.Controllers
            [Required]long userId,long? deckId,
             CancellationToken ct)
         {
-            var decks = await _svc.GetUserDecksAsync(userId, deckId, ct);
+            var decks = await _svc.GetUserDecksAsync(userId, deckId);
             return Ok(decks);
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<DeckResponseDTO>>> List([Required] long userId, CancellationToken ct)
+        public async Task<ActionResult<List<DeckResponseDTO>>> List([Required] long userId)
         {
-            return Ok(await _svc.ListAsync(userId, ct));
+            return Ok(await _svc.ListAsync(userId));
         }
 
         [HttpPost("{deckId:long}/cards")]
-        public async Task<ActionResult<object>> AddCard([Required] long userId,[FromRoute] long deckId, [FromBody] DeckCardDTO body, CancellationToken ct)
+        public async Task<ActionResult<object>> AddCard([Required] long userId,[FromRoute] long deckId, [FromBody] DeckCardDTO body)
         {
-            var ok = await _svc.AddCardAsync(userId, deckId, body.CardId, body.Qty <= 0 ? (short)1 : body.Qty, ct);
+            var ok = await _svc.AddCardAsync(userId, deckId, body.CardId, body.Qty <= 0 ? (short)1 : body.Qty);
             return ok ? Ok(new { ok = true }) : NotFound();
         }
 
         [HttpDelete("{deckId:long}/cards/{cardId:long}")]
-        public async Task<ActionResult<object>> RemoveCard([Required] long userId,[FromRoute] long deckId, [FromRoute] long cardId, [FromQuery] short qty = 1, CancellationToken ct = default)
+        public async Task<ActionResult<object>> RemoveCard([Required] long userId,[FromRoute] long deckId, [FromRoute] long cardId, [FromQuery] short qty = 1)
         {
-            var ok = await _svc.RemoveCardAsync(userId, deckId, cardId, qty, ct);
+            var ok = await _svc.RemoveCardAsync(userId, deckId, cardId, qty);
             return ok ? Ok(new { ok = true }) : NotFound();
         }
 

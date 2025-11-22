@@ -4,7 +4,7 @@ namespace NeuroNexusBackend.Services
 {
     public interface IGoogleDeviceAuthService
     {
-        Task<DevicePollResponseDTO> PollAsync(Guid loginRequestId, CancellationToken ct);
+        Task<DevicePollResponseDTO> PollAsync(Guid loginRequestId);
         Task<DeviceStartResponseDTO> StartAsync(CancellationToken ct);
     }
 }

@@ -10,7 +10,7 @@ namespace NeuroNexusBackend.Repos
         private readonly AppDbContext _db;
         public CardRepo(AppDbContext db) => _db = db;
 
-        public async Task UpsertManyAsync(IEnumerable<CardUpsertDTO> payload, CancellationToken ct)
+        public async Task UpsertManyAsync(IEnumerable<CardUpsertDTO> payload)
         {
             foreach (var c in payload)
             {
@@ -19,14 +19,14 @@ namespace NeuroNexusBackend.Repos
             : c.ExpansionCode.Trim();
 
                 var expansion = await _db.Expansions
-                    .SingleOrDefaultAsync(e => e.Code == expansionCode, ct);
+                    .SingleOrDefaultAsync(e => e.Code == expansionCode);
 
                 if (expansion == null)
                 {
                     throw new InvalidOperationException($"Expansion '{expansionCode}' does not exist.");
                 }
                 var existing = await _db.Cards
-                    .FirstOrDefaultAsync(x => x.Name == c.Name && x.Suit == c.Suit, ct);
+                    .FirstOrDefaultAsync(x => x.Name == c.Name && x.Suit == c.Suit);
 
                 if (existing == null)
                 {
@@ -64,10 +64,10 @@ namespace NeuroNexusBackend.Repos
 ;
                 }
             }
-            await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync();
         }
 
-        public async Task<List<CardRuntimeDTO>> QueryRuntimeAsync(string? suit, string? rarity, string? trigger, string? effect, CancellationToken ct)
+        public async Task<List<CardRuntimeDTO>> QueryRuntimeAsync(string? suit, string? rarity, string? trigger, string? effect)
         {
             var q = _db.Cards.AsNoTracking().Select(x => new CardRuntimeDTO
             {
@@ -90,7 +90,7 @@ namespace NeuroNexusBackend.Repos
             if (!string.IsNullOrWhiteSpace(trigger)) q = q.Where(c => c.Trigger == trigger);
             if (!string.IsNullOrWhiteSpace(effect)) q = q.Where(c => c.Effect == effect);
 
-            return await q.OrderBy(c => c.Suit).ThenBy(c => c.Points).ThenBy(c => c.Name).ToListAsync(ct);
+            return await q.OrderBy(c => c.Suit).ThenBy(c => c.Points).ThenBy(c => c.Name).ToListAsync();
         }
 
     }

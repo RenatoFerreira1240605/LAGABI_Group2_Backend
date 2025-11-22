@@ -9,20 +9,20 @@ namespace NeuroNexusBackend.Services
         private readonly ISpawnRepo _spawns;
         public SpawnService(ISpawnRepo spawns) => _spawns = spawns;
 
-        public async Task<long> CreateAsync(SpawnCreateRequestDTO req, CancellationToken ct)
+        public async Task<long> CreateAsync(SpawnCreateRequestDTO req)
         {
             if (req.Lat < -90 || req.Lat > 90) throw new ArgumentOutOfRangeException(nameof(req.Lat));
             if (req.Lon < -180 || req.Lon > 180) throw new ArgumentOutOfRangeException(nameof(req.Lon));
 
-            var s = await _spawns.CreateAsync(req.Lat, req.Lon, req.CardId, req.ExpiresAt, ct);
+            var s = await _spawns.CreateAsync(req.Lat, req.Lon, req.CardId, req.ExpiresAt);
             return s.Id;
         }
 
-        public async Task<NearbyResponseDTO> NearbyAsync(double lat, double lon, int radiusM, CancellationToken ct)
+        public async Task<NearbyResponseDTO> NearbyAsync(double lat, double lon, int radiusM)
         {
             if (radiusM <= 0) radiusM = 200;
 
-            var list = await _spawns.NearbyAsync(lat, lon, radiusM, ct);
+            var list = await _spawns.NearbyAsync(lat, lon, radiusM);
             var features = new List<SpawnFeatureDTO>(list.Count);
             foreach (var s in list)
             {
@@ -39,10 +39,10 @@ namespace NeuroNexusBackend.Services
             return new NearbyResponseDTO { Features = features };
         }
 
-        public Task<bool> ClaimAsync(long id, CancellationToken ct)
-            => _spawns.ClaimAsync(id, ct);
+        public Task<bool> ClaimAsync(long id)
+            => _spawns.ClaimAsync(id);
 
-        public Task<bool> CatchAsync(long id, CancellationToken ct)
-            => _spawns.CatchAsync(id, ct);
+        public Task<bool> CatchAsync(long id)
+            => _spawns.CatchAsync(id);
     }
 }

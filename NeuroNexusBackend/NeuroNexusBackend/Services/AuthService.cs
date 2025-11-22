@@ -11,13 +11,13 @@ namespace NeuroNexusBackend.Services
         private readonly AppDbContext _db;
         public AuthService(AppDbContext db) => _db = db;
 
-        public async Task<GuestResponseDTO> CreateGuestAsync(GuestRequestDTO req, CancellationToken ct)
+        public async Task<GuestResponseDTO> CreateGuestAsync(GuestRequestDTO req)
         {
             var baseHandle = string.IsNullOrWhiteSpace(req.Handle)
                 ? "user"
                 : req.Handle!.Trim().ToLowerInvariant();
 
-            var handle = await GenerateUniqueHandleAsync(baseHandle, ct);
+            var handle = await GenerateUniqueHandleAsync(baseHandle);
 
             var user = new User
             {
@@ -29,7 +29,7 @@ namespace NeuroNexusBackend.Services
             };
 
             _db.Users.Add(user);
-            await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync();
 
             return new GuestResponseDTO { UserId = user.Id, Handle = user.Handle };
         }
@@ -41,14 +41,13 @@ namespace NeuroNexusBackend.Services
             string provider,
             string subject,
             string? email,
-            string? displayName,
-            CancellationToken ct)
+            string? displayName)
         {
             // 1) Ver se já existe utilizador para este provider+subject
             var user = await _db.Users
                 .FirstOrDefaultAsync(u =>
                     u.ExternalProvider == provider &&
-                    u.ExternalSubject == subject, ct);
+                    u.ExternalSubject == subject);
 
             if (user != null)
             {
@@ -68,14 +67,14 @@ namespace NeuroNexusBackend.Services
                 }
 
                 if (changed)
-                    await _db.SaveChangesAsync(ct);
+                    await _db.SaveChangesAsync();
 
                 return user;
             }
 
             // 2) Não existe → criar novo utilizador
             var baseHandle = $"user_{provider}";
-            var handle = await GenerateUniqueHandleAsync(baseHandle, ct);
+            var handle = await GenerateUniqueHandleAsync(baseHandle);
 
             user = new User
             {
@@ -88,7 +87,7 @@ namespace NeuroNexusBackend.Services
             };
 
             _db.Users.Add(user);
-            await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync();
 
             return user;
         }
@@ -96,14 +95,14 @@ namespace NeuroNexusBackend.Services
         /// <summary>
         /// Gera um handle único com sufixos numéricos se necessário (base, base2, base3...).
         /// </summary>
-        private async Task<string> GenerateUniqueHandleAsync(string baseHandle, CancellationToken ct)
+        private async Task<string> GenerateUniqueHandleAsync(string baseHandle)
         {
             const int maxRetries = 20;
 
             for (int i = 0; i < maxRetries; i++)
             {
                 var handle = i == 0 ? baseHandle : $"{baseHandle}{i + 1}";
-                var exists = await _db.Users.AnyAsync(u => u.Handle == handle, ct);
+                var exists = await _db.Users.AnyAsync(u => u.Handle == handle);
                 if (!exists)
                     return handle;
             }

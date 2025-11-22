@@ -45,10 +45,10 @@ namespace NeuroNexusBackend.Services
                 new KeyValuePair<string,string>("scope", "openid email profile")
             });
 
-            using var resp = await client.PostAsync(DeviceCodeEndpoint, content, ct);
+            using var resp = await client.PostAsync(DeviceCodeEndpoint, content);
             resp.EnsureSuccessStatusCode();
 
-            var json = await resp.Content.ReadAsStringAsync(ct);
+            var json = await resp.Content.ReadAsStringAsync();
             var deviceResp = JsonSerializer.Deserialize<GoogleDeviceCodeResponse>(json)
                              ?? throw new InvalidOperationException("Invalid response from Google device/code.");
 
@@ -64,7 +64,7 @@ namespace NeuroNexusBackend.Services
             };
 
             _db.DeviceLoginRequests.Add(entity);
-            await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync();
 
             return new DeviceStartResponseDTO
             {
@@ -76,11 +76,11 @@ namespace NeuroNexusBackend.Services
             };
         }
 
-        public async Task<DevicePollResponseDTO> PollAsync(Guid loginRequestId, CancellationToken ct)
+        public async Task<DevicePollResponseDTO> PollAsync(Guid loginRequestId)
         {
             var req = await _db.DeviceLoginRequests
                 .Include(x => x.User)
-                .FirstOrDefaultAsync(x => x.Id == loginRequestId, ct);
+                .FirstOrDefaultAsync(x => x.Id == loginRequestId);
 
             if (req == null)
             {
@@ -108,7 +108,7 @@ namespace NeuroNexusBackend.Services
                     };
                 }
 
-                var existingUser = req.User ?? await _db.Users.FirstAsync(u => u.Id == req.UserId.Value, ct);
+                var existingUser = req.User ?? await _db.Users.FirstAsync(u => u.Id == req.UserId.Value);
                 var token = _tokenService.GenerateSessionToken(existingUser);
 
                 return new DevicePollResponseDTO
@@ -124,7 +124,7 @@ namespace NeuroNexusBackend.Services
             if (DateTime.UtcNow >= req.ExpiresAt)
             {
                 req.Status = "Expired";
-                await _db.SaveChangesAsync(ct);
+                await _db.SaveChangesAsync();
                 return new DevicePollResponseDTO { Status = "expired" };
             }
 
@@ -139,8 +139,8 @@ namespace NeuroNexusBackend.Services
                 new KeyValuePair<string,string>("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
             });
 
-            using var resp = await client.PostAsync(TokenEndpoint, content, ct);
-            var json = await resp.Content.ReadAsStringAsync(ct);
+            using var resp = await client.PostAsync(TokenEndpoint, content);
+            var json = await resp.Content.ReadAsStringAsync();
 
             var tokenResp = JsonSerializer.Deserialize<GoogleTokenResponse>(json)
                             ?? throw new InvalidOperationException("Invalid response from Google token endpoint.");
@@ -156,14 +156,14 @@ namespace NeuroNexusBackend.Services
                 if (tokenResp.Error == "expired_token")
                 {
                     req.Status = "Expired";
-                    await _db.SaveChangesAsync(ct);
+                    await _db.SaveChangesAsync();
                     return new DevicePollResponseDTO { Status = "expired" };
                 }
 
                 if (tokenResp.Error == "access_denied")
                 {
                     req.Status = "Error";
-                    await _db.SaveChangesAsync(ct);
+                    await _db.SaveChangesAsync();
                     return new DevicePollResponseDTO
                     {
                         Status = "error",
@@ -173,7 +173,7 @@ namespace NeuroNexusBackend.Services
 
                 // Outro erro qualquer
                 req.Status = "Error";
-                await _db.SaveChangesAsync(ct);
+                await _db.SaveChangesAsync();
                 return new DevicePollResponseDTO
                 {
                     Status = "error",
@@ -213,12 +213,11 @@ namespace NeuroNexusBackend.Services
                 provider: "google",
                 subject: sub,
                 email: email,
-                displayName: name,
-                ct: ct);
+                displayName: name);
 
             req.Status = "Completed";
             req.UserId = user.Id;
-            await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync();
 
             var sessionToken = _tokenService.GenerateSessionToken(user);
 

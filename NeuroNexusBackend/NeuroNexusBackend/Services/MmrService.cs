@@ -11,26 +11,26 @@ namespace NeuroNexusBackend.Services
         private readonly AppDbContext _db;
         public MmrService(AppDbContext db) => _db = db;
 
-        public async Task<int> GetAsync(long userId, string mode, CancellationToken ct)
+        public async Task<int> GetAsync(long userId, string mode)
         {
-            var r = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == userId && x.Mode == mode, ct);
+            var r = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == userId && x.Mode == mode);
             return r?.Rating ?? 1000;
         }
 
-        public async Task EnsureAsync(long userId, string mode, CancellationToken ct)
+        public async Task EnsureAsync(long userId, string mode)
         {
-            var r = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == userId && x.Mode == mode, ct);
+            var r = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == userId && x.Mode == mode);
             if (r == null)
             {
                 _db.MmrRatings.Add(new MmrRating { UserId = userId, Mode = mode, Rating = 1000 });
-                await _db.SaveChangesAsync(ct);
+                await _db.SaveChangesAsync();
             }
         }
 
-        public async Task UpdateAfterMatchAsync(long p1, long p2, string mode, int winner, CancellationToken ct)
+        public async Task UpdateAfterMatchAsync(long p1, long p2, string mode, int winner)
         {
-            var r1 = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == p1 && x.Mode == mode, ct);
-            var r2 = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == p2 && x.Mode == mode, ct);
+            var r1 = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == p1 && x.Mode == mode);
+            var r2 = await _db.MmrRatings.FirstOrDefaultAsync(x => x.UserId == p2 && x.Mode == mode);
 
             var createdR1 = false;
             var createdR2 = false;
@@ -58,7 +58,7 @@ namespace NeuroNexusBackend.Services
             if (!createdR1) _db.MmrRatings.Update(r1);
             if (!createdR2) _db.MmrRatings.Update(r2);
 
-            await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync();
         }
     }
 }

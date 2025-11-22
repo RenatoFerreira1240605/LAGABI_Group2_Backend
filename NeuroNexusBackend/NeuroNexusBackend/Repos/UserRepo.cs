@@ -13,16 +13,19 @@ namespace NeuroNexusBackend.Repos
         private readonly AppDbContext _db;
         public UserRepo(AppDbContext db) => _db = db;
 
-        public async Task<User> CreateGuestAsync(string handle, CancellationToken ct)
+        public async Task<User> CreateGuestAsync(string handle)
         {
             // Create a guest user with a unique handle.
             var u = new User { Handle = handle };
             _db.Users.Add(u);
-            await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync();
             return u;
         }
 
-        public Task<User?> GetAsync(long id, CancellationToken ct) =>
-            _db.Users.FirstOrDefaultAsync(x => x.Id == id, ct);
+        public Task<User?> GetAsync(long id) =>
+            _db.Users.FirstOrDefaultAsync(x => x.Id == id);
+
+        public Task<User?> GetAsync(string email) =>
+            _db.Users.FirstOrDefaultAsync(x => x.Email == email);
     }
 }

@@ -9,10 +9,10 @@ namespace NeuroNexusBackend.Services
         private readonly ICardRepo _repo;
         public CardService(ICardRepo repo) => _repo = repo;
 
-        public Task UpsertManyAsync(IEnumerable<CardUpsertDTO> payload, CancellationToken ct)
-            => _repo.UpsertManyAsync(payload, ct);
+        public Task UpsertManyAsync(IEnumerable<CardUpsertDTO> payload)
+            => _repo.UpsertManyAsync(payload);
 
-        public Task<List<CardRuntimeDTO>> SearchAsync(string? suit, string? rarity, string? trigger, string? effect, CancellationToken ct)
-            => _repo.QueryRuntimeAsync(suit, rarity, trigger, effect, ct);
+        public Task<List<CardRuntimeDTO>> SearchAsync(string? suit, string? rarity, string? trigger, string? effect)
+            => _repo.QueryRuntimeAsync(suit, rarity, trigger, effect);
     }
 }

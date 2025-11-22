@@ -33,11 +33,9 @@ namespace NeuroNexusBackend.Controllers
 
         // Novo: poll do device flow
         [HttpGet("google/device/poll")]
-        public async Task<ActionResult<DevicePollResponseDTO>> PollGoogleDeviceFlow(
-            [FromQuery] Guid requestId,
-            CancellationToken ct)
+        public async Task<ActionResult<DevicePollResponseDTO>> PollGoogleDeviceFlow([FromQuery] Guid requestId)
         {
-            var result = await _googleDeviceAuth.PollAsync(requestId, ct);
+            var result = await _googleDeviceAuth.PollAsync(requestId);
             return Ok(result);
         }
     }

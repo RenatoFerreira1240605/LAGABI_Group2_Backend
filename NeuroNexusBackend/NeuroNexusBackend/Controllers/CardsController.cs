@@ -14,9 +14,9 @@ namespace NeuroNexusBackend.Controllers
 
         /// <summary>Bulk upsert de cartas (admin/dev seed).</summary>
         [HttpPost("bulk")]
-        public async Task<ActionResult<object>> BulkUpsert([FromBody] List<CardUpsertDTO> body, CancellationToken ct)
+        public async Task<ActionResult<object>> BulkUpsert([FromBody] List<CardUpsertDTO> body)
         {
-            await _svc.UpsertManyAsync(body, ct);
+            await _svc.UpsertManyAsync(body);
             return Ok(new { ok = true, count = body.Count });
         }
 
@@ -24,9 +24,8 @@ namespace NeuroNexusBackend.Controllers
         [HttpGet("runtime")]
         public async Task<ActionResult<List<CardRuntimeDTO>>> Runtime(
             [FromQuery] string? suit, [FromQuery] string? rarity,
-            [FromQuery] string? trigger, [FromQuery] string? effect,
-            CancellationToken ct = default)
-            => Ok(await _svc.SearchAsync(suit, rarity, trigger, effect, ct));
+            [FromQuery] string? trigger, [FromQuery] string? effect)
+            => Ok(await _svc.SearchAsync(suit, rarity, trigger, effect));
 
 
     }

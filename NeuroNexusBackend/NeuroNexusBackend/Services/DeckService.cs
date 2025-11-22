@@ -16,36 +16,36 @@ namespace NeuroNexusBackend.Services
         }
 
 
-        public async Task<long> CreateAsync(long userId, DeckCreateRequestDTO req, CancellationToken ct)
+        public async Task<long> CreateAsync(long userId, DeckCreateRequestDTO req)
         {
             if (string.IsNullOrWhiteSpace(req.Name)) throw new ArgumentException("Name is required");
             var tuples = (req.Cards ?? new List<DeckCardDTO>())
                 .Select(x => (x.CardId, (short)(x.Qty <= 0 ? 1 : x.Qty)));
-            var deck = await _repo.CreateAsync(userId, req.Name, tuples, ct);
+            var deck = await _repo.CreateAsync(userId, req.Name, tuples);
 
 
             return deck.Id;
         }
 
-        public async Task<List<DeckResponseDTO>> ListAsync(long userId, CancellationToken ct)
+        public async Task<List<DeckResponseDTO>> ListAsync(long userId)
         {
-            var decks = await _repo.ListByUserAsync(userId, ct);
+            var decks = await _repo.ListByUserAsync(userId);
             return decks.Select(d => new DeckResponseDTO(d.Id, d.Name, d.CreatedAt)).ToList();
         }
         private readonly AppDbContext _db;
 
 
-        public Task<bool> AddCardAsync(long userId, long deckId, long cardId, short qty, CancellationToken ct)
-            => _repo.AddCardAsync(userId, deckId, cardId, qty, ct);
+        public Task<bool> AddCardAsync(long userId, long deckId, long cardId, short qty)
+            => _repo.AddCardAsync(userId, deckId, cardId, qty);
 
-        public Task<bool> RemoveCardAsync(long userId, long deckId, long cardId, short qty, CancellationToken ct)
-            => _repo.RemoveCardAsync(userId, deckId, cardId, qty, ct);
+        public Task<bool> RemoveCardAsync(long userId, long deckId, long cardId, short qty)
+            => _repo.RemoveCardAsync(userId, deckId, cardId, qty);
 
-        public async Task<List<DeckListDTO>> GetUserDecksAsync(long userId, long? deckId, CancellationToken ct)
+        public async Task<List<DeckListDTO>> GetUserDecksAsync(long userId, long? deckId)
         {
             
-            var decks = deckId==null? await _repo.GetDecksWithCardsAsync(userId, ct): 
-                await _repo.GetDecksWithCardsAsync(userId, deckId.Value, ct);
+            var decks = deckId==null? await _repo.GetDecksWithCardsAsync(userId): 
+                await _repo.GetDecksWithCardsAsync(userId, deckId.Value);
 
             return decks.Select(d => new DeckListDTO
             {

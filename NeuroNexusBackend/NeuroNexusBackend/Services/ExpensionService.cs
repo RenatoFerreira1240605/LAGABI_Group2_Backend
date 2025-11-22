@@ -13,11 +13,11 @@ namespace NeuroNexusBackend.Services
             _db = db;
         }
 
-        public async Task PurchaseAsync(long userId, string expansionCode, CancellationToken ct)
+        public async Task PurchaseAsync(long userId, string expansionCode)
         {
             // 1) Obter a expansão
             var expansion = await _db.Expansions
-                .SingleOrDefaultAsync(e => e.Code == expansionCode, ct);
+                .SingleOrDefaultAsync(e => e.Code == expansionCode);
 
             if (expansion == null)
                 throw new InvalidOperationException($"Expansion '{expansionCode}' não existe.");
@@ -27,7 +27,7 @@ namespace NeuroNexusBackend.Services
 
             // 2) Verificar se o user já tem esta expansão
             var alreadyOwned = await _db.Set<UserExpansion>()
-                .AnyAsync(ue => ue.UserId == userId && ue.ExpansionId == expansion.Id, ct);
+                .AnyAsync(ue => ue.UserId == userId && ue.ExpansionId == expansion.Id);
 
             if (alreadyOwned)
             {
@@ -35,7 +35,7 @@ namespace NeuroNexusBackend.Services
                 return;
             }
 
-            using var tx = await _db.Database.BeginTransactionAsync(ct);
+            using var tx = await _db.Database.BeginTransactionAsync();
 
             // 3) Registar a compra da expansão
             _db.Set<UserExpansion>().Add(new UserExpansion
@@ -48,7 +48,7 @@ namespace NeuroNexusBackend.Services
             // 4) Buscar todas as cartas desta expansão
             var cards = await _db.Cards
                 .Where(c => c.ExpansionId == expansion.Id)
-                .ToListAsync(ct);
+                .ToListAsync();
 
             foreach (var card in cards)
             {
@@ -56,7 +56,7 @@ namespace NeuroNexusBackend.Services
                 const short toAdd = 1;
 
                 var inv = await _db.UserCardInventory
-                    .SingleOrDefaultAsync(i => i.UserId == userId && i.CardId == card.Id, ct);
+                    .SingleOrDefaultAsync(i => i.UserId == userId && i.CardId == card.Id);
 
                 if (inv == null)
                 {
@@ -80,8 +80,8 @@ namespace NeuroNexusBackend.Services
                 }
             }
 
-            await _db.SaveChangesAsync(ct);
-            await tx.CommitAsync(ct);
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
         }
     }
 

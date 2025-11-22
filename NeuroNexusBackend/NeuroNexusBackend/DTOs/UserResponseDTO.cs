@@ -1,6 +1,6 @@
 ﻿namespace NeuroNexusBackend.DTOs
 {
-    public struct MeResponseDTO
+    public struct UserResponseDTO
     {
         public long Id { get; set; }
         public string Handle { get; set; }
