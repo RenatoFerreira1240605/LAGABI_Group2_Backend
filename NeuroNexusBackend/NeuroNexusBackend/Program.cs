@@ -38,28 +38,45 @@ namespace NeuroNexusBackend
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
+            })
+                .AddJwtBearer(options =>
                 {
                     var jwtSection = builder.Configuration.GetSection("Jwt");
                     var secret = jwtSection.GetValue<string>("Secret");
                     var issuer = jwtSection.GetValue<string>("Issuer");
                     var audience = jwtSection.GetValue<string>("Audience");
-                
-                    var key = Encoding.UTF8.GetBytes(secret);
-                
+
+                    var key = Encoding.UTF8.GetBytes(secret ?? "");
+
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
                         ValidIssuer = issuer,
-                
+
                         ValidateAudience = true,
                         ValidAudience = audience,
-                
+
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = new SymmetricSecurityKey(key),
-                
+
                         ValidateLifetime = true,
-                        ClockSkew = TimeSpan.FromMinutes(1) // margem pequena
+                        ClockSkew = TimeSpan.FromMinutes(1)
+                    };
+
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnAuthenticationFailed = ctx =>
+                        {
+                            Console.WriteLine("[JWT] Authentication failed: " + ctx.Exception.Message);
+                            if (ctx.Exception.InnerException != null)
+                                Console.WriteLine("[JWT] Inner: " + ctx.Exception.InnerException.Message);
+                            return Task.CompletedTask;
+                        },
+                        OnChallenge = ctx =>
+                        {
+                            Console.WriteLine("[JWT] OnChallenge: " + ctx.Error + " - " + ctx.ErrorDescription);
+                            return Task.CompletedTask;
+                        }
                     };
                 });
 
@@ -78,7 +95,6 @@ namespace NeuroNexusBackend
             builder.Services.AddScoped<IDeckRepo, DeckRepo>();
             builder.Services.AddScoped<ISpawnRepo, SpawnRepo>();
             builder.Services.AddScoped<ICardRepo, CardRepo>();
-            builder.Services.AddScoped<IUserRepo, UserRepo>();
 
             // Services
             builder.Services.AddScoped<IAuthService, AuthService>();
@@ -86,7 +102,6 @@ namespace NeuroNexusBackend
             builder.Services.AddScoped<ISpawnService, SpawnService>();
             builder.Services.AddScoped<IMmrService, MmrService>();
             builder.Services.AddScoped<ICardService, CardService>();
-            builder.Services.AddScoped<IExpansionService, ExpansionService>();
             builder.Services.AddScoped<IUserService, UserService>();
 
             // Controllers + Swagger
@@ -96,6 +111,28 @@ namespace NeuroNexusBackend
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "NeuroNexus API", Version = "v1" });
 
+                var jwtSecurityScheme = new OpenApiSecurityScheme
+                {
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                    Description = "Inserir apenas o token JWT (sem 'Bearer ' no início).",
+
+                    Reference = new OpenApiReference
+                    {
+                        Id = JwtBearerDefaults.AuthenticationScheme,
+                        Type = ReferenceType.SecurityScheme
+                    }
+                };
+
+                c.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
+
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    { jwtSecurityScheme, Array.Empty<string>() }
+                });
             });
 
             var app = builder.Build();

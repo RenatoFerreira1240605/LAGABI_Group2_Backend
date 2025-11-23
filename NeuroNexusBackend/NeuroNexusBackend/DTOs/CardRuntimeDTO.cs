@@ -14,5 +14,6 @@
         public string? Target { get; set; }
         public bool OncePerGame { get; set; }
         public string? AbilityJson { get; set; }
+        public string? ExpansionCode { get; set; }
     }
 }

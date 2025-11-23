@@ -116,7 +116,8 @@ namespace NeuroNexusBackend.Services
                     Status = "ok",
                     SessionToken = token,
                     DisplayName = existingUser.DisplayName,
-                    Email = existingUser.Email
+                    Email = existingUser.Email,
+                    UserId = existingUser.Id
                 };
             }
 
@@ -226,7 +227,8 @@ namespace NeuroNexusBackend.Services
                 Status = "ok",
                 SessionToken = sessionToken,
                 DisplayName = user.DisplayName,
-                Email = user.Email
+                Email = user.Email,
+                UserId = user.Id
             };
         }
     }

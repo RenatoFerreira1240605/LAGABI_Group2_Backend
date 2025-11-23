@@ -92,6 +92,95 @@ namespace NeuroNexusBackend.Repos
 
             return await q.OrderBy(c => c.Suit).ThenBy(c => c.Points).ThenBy(c => c.Name).ToListAsync();
         }
+        public async Task<List<ExpansionDTO>> GetExpansionsAsync(long? userId)
+        {
+            var expansions = await _db.Expansions
+                .AsNoTracking()
+                .ToListAsync();
+
+            HashSet<long> ownedIds = new();
+
+            if (userId.HasValue)
+            {
+                ownedIds = (await _db.UserExpansions
+                        .Where(ue => ue.UserId == userId.Value)
+                        .Select(ue => ue.ExpansionId)
+                        .ToListAsync())
+                    .ToHashSet();
+            }
+
+            return expansions
+                .Select(e => new ExpansionDTO
+                {
+                    Code = e.Code,
+                    Name = e.Name,
+                    IsCore = e.IsCore,
+                    Owned = userId.HasValue && ownedIds.Contains(e.Id)
+                })
+                .ToList();
+        }
+
+        public async Task PurchaseExpansionAsync(long userId, string expansionCode)
+        {
+            var expansion = await _db.Expansions
+                .SingleOrDefaultAsync(e => e.Code == expansionCode);
+
+            if (expansion == null)
+                throw new InvalidOperationException($"Expansion '{expansionCode}' does not exist.");
+
+            if (expansion.IsCore)
+                throw new InvalidOperationException("Core expansion cannot be purchased.");
+
+            var alreadyOwned = await _db.UserExpansions
+                .AnyAsync(ue => ue.UserId == userId && ue.ExpansionId == expansion.Id);
+
+            if (alreadyOwned)
+                return; // já tem, não faz nada (ou lança InvalidOperation se preferires)
+
+            using var tx = await _db.Database.BeginTransactionAsync();
+
+            _db.UserExpansions.Add(new UserExpansion
+            {
+                UserId = userId,
+                ExpansionId = expansion.Id,
+                PurchasedAt = DateTimeOffset.UtcNow
+            });
+
+            // buscar todas as cartas desta expansão
+            var cards = await _db.Cards
+                .Where(c => c.ExpansionId == expansion.Id)
+                .ToListAsync();
+
+            foreach (var card in cards)
+            {
+                const short toAdd = 1; // nº de cópias por carta quando compras a expansão
+
+                var inv = await _db.UserCardInventory
+                    .SingleOrDefaultAsync(i => i.UserId == userId && i.CardId == card.Id);
+
+                if (inv == null)
+                {
+                    var finalQuantity = Math.Min((short)4, toAdd);
+
+                    inv = new UserCardInventory
+                    {
+                        UserId = userId,
+                        CardId = card.Id,
+                        Quantity = finalQuantity
+                    };
+
+                    _db.UserCardInventory.Add(inv);
+                }
+                else
+                {
+                    var newQuantity = (short)(inv.Quantity + toAdd);
+                    inv.Quantity = Math.Min((short)4, newQuantity);
+                }
+            }
+
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
 
     }
 }

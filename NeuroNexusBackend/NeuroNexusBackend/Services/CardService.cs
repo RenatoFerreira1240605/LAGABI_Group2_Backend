@@ -14,5 +14,10 @@ namespace NeuroNexusBackend.Services
 
         public Task<List<CardRuntimeDTO>> SearchAsync(string? suit, string? rarity, string? trigger, string? effect)
             => _repo.QueryRuntimeAsync(suit, rarity, trigger, effect);
+
+        public Task PurchaseExpansionAsync(long userId, string expansionCode)
+            => _repo.PurchaseExpansionAsync(userId, expansionCode);
+        public Task<List<ExpansionDTO>> GetExpansionsAsync(long? userId)
+    => _repo.GetExpansionsAsync(userId);
     }
 }
