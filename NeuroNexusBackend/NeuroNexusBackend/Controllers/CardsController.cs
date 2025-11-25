@@ -22,11 +22,18 @@ namespace NeuroNexusBackend.Controllers
 
         /// <summary>Pesquisa runtime-friendly (filtra por suit/rarity/trigger/effect).</summary>
         [HttpGet("runtime")]
-        public async Task<ActionResult<List<CardRuntimeDTO>>> Runtime(
-            [FromQuery] string? suit, [FromQuery] string? rarity,
-            [FromQuery] string? trigger, [FromQuery] string? effect)
-            => Ok(await _svc.SearchAsync(suit, rarity, trigger, effect));
-
+        public async Task<ActionResult<List<CardRuntimeDTO>>> Runtime([FromQuery] string? suit, [FromQuery] string? rarity, [FromQuery] string? trigger, [FromQuery] string? effect)
+        {
+            var cards = await _svc.SearchAsync(suit, rarity, trigger, effect);
+            return Ok(cards);
+        }
+        /// <summary>Devolve a coleção de cartas de um utilizador (inventário completo).</summary>
+        [HttpGet("collection/{userId:long}")]
+        public async Task<ActionResult<List<UserCardDTO>>> GetUserCollection(long userId)
+        {
+            var cards = await _svc.GetUserCollectionAsync(userId);
+            return Ok(cards);
+        }
 
     }
 }

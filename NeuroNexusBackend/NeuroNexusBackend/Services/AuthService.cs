@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using NeuroNexusBackend.Data;
 using NeuroNexusBackend.DTOs;
 using NeuroNexusBackend.Models;
@@ -9,7 +10,15 @@ namespace NeuroNexusBackend.Services
     public class AuthService : IAuthService
     {
         private readonly AppDbContext _db;
-        public AuthService(AppDbContext db) => _db = db;
+        private readonly ICardService _cardService;
+
+        public AuthService(AppDbContext db, ICardService cardService)
+        {
+            _db = db;
+            _cardService = cardService;
+            _cardService = cardService;
+
+        }
 
         public async Task<GuestResponseDTO> CreateGuestAsync(GuestRequestDTO req)
         {
@@ -43,7 +52,7 @@ namespace NeuroNexusBackend.Services
             string? email,
             string? displayName)
         {
-            // 1) Ver se já existe utilizador para este provider+subject
+            // Ver se já existe utilizador para este provider+subject
             var user = await _db.Users
                 .FirstOrDefaultAsync(u =>
                     u.ExternalProvider == provider &&
@@ -72,7 +81,7 @@ namespace NeuroNexusBackend.Services
                 return user;
             }
 
-            // 2) Não existe → criar novo utilizador
+            // Não existe → criar novo utilizador
             var baseHandle = $"user_{provider}";
             var handle = await GenerateUniqueHandleAsync(baseHandle);
 
@@ -88,6 +97,9 @@ namespace NeuroNexusBackend.Services
 
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
+
+            // dar o starter bundle do core ao user novo
+            await _cardService.GrantCoreStarterBundleAsync(user.Id);
 
             return user;
         }

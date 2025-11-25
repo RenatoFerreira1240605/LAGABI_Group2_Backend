@@ -19,5 +19,11 @@ namespace NeuroNexusBackend.Services
             => _repo.PurchaseExpansionAsync(userId, expansionCode);
         public Task<List<ExpansionDTO>> GetExpansionsAsync(long? userId)
     => _repo.GetExpansionsAsync(userId);
+
+        public Task GrantCoreStarterBundleAsync(long userId)
+        => _repo.GrantCoreStarterBundleAsync(userId);
+
+        public Task<List<UserCardDTO>> GetUserCollectionAsync(long userId)
+        => _repo.GetUserCollectionAsync(userId);
     }
 }

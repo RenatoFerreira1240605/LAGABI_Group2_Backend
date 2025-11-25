@@ -3,6 +3,7 @@
 namespace NeuroNexusBackend.Services
 {
     public interface ITokenService
-    {        string GenerateSessionToken(User user);
+    {        
+        string GenerateSessionToken(User user);
     }
 }

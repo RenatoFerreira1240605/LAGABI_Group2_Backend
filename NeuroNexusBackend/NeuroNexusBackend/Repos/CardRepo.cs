@@ -181,6 +181,126 @@ namespace NeuroNexusBackend.Repos
             await _db.SaveChangesAsync();
             await tx.CommitAsync();
         }
+        public async Task GrantCoreStarterBundleAsync(long userId)
+        {
+            // expansion core
+            var coreExpansion = await _db.Expansions
+                .SingleOrDefaultAsync(e => e.IsCore);
 
+            if (coreExpansion == null)
+                throw new InvalidOperationException("Core expansion not found.");
+
+            // evitar dar starter duas vezes ao mesmo user
+            var alreadyHasCoreCards = await _db.UserCardInventory
+                .Join(
+                    _db.Cards,
+                    inv => inv.CardId,
+                    c => c.Id,
+                    (inv, c) => new { inv, c }
+                )
+                .AnyAsync(x => x.inv.UserId == userId && x.c.ExpansionId == coreExpansion.Id);
+
+            if (alreadyHasCoreCards)
+                return;
+
+            // todas as cartas do core
+            var coreCards = await _db.Cards
+                .Where(c => c.ExpansionId == coreExpansion.Id)
+                .ToListAsync();
+
+            var suits = new[] { "Analytical", "Creative", "Structured", "Social" };
+
+            // helper para escolher N aleatórias por naipe/raridade
+            List<Card> PickByRarity(string rarity, int perSuitCount)
+            {
+                var result = new List<Card>();
+
+                foreach (var suit in suits)
+                {
+                    var candidates = coreCards
+                        .Where(c => c.Rarity == rarity && c.Suit == suit)
+                        .OrderBy(_ => Guid.NewGuid())      // random
+                        .Take(perSuitCount)
+                        .ToList();
+
+                    result.AddRange(candidates);
+                }
+
+                return result;
+            }
+
+            // escolher cartas
+            var commons = PickByRarity("Common", 2); // 2 por naipe -> até 8 comuns
+            var rares = PickByRarity("Rare", 2); // 2 por naipe -> até 8 raras
+            var uniques = PickByRarity("Unique", 1); // 1 por naipe -> até 4 unique
+            var legendaries = PickByRarity("Legendary", 1); // 1 por naipe -> até 4 legendary
+
+            // mapear para (card, qty)
+            var grant = new List<(Card card, short qty)>();
+
+            grant.AddRange(commons.Select(c => (c, (short)4))); // 4 cópias de cada common
+            grant.AddRange(rares.Select(c => (c, (short)2)));   // 2 cópias de cada rare
+            grant.AddRange(uniques.Select(c => (c, (short)2))); // 2 cópias de cada unique
+            grant.AddRange(legendaries.Select(c => (c, (short)1))); // 1 cópia de cada legendary
+
+            // aplicar à UserCardInventory (clamp a 4 como no PurchaseExpansion)
+            using var tx = await _db.Database.BeginTransactionAsync();
+
+            foreach (var (card, qty) in grant)
+            {
+                if (qty <= 0) continue;
+
+                var inv = await _db.UserCardInventory
+                    .SingleOrDefaultAsync(i => i.UserId == userId && i.CardId == card.Id);
+
+                if (inv == null)
+                {
+                    var finalQuantity = Math.Min((short)4, qty);
+                    inv = new UserCardInventory
+                    {
+                        UserId = userId,
+                        CardId = card.Id,
+                        Quantity = finalQuantity
+                    };
+                    _db.UserCardInventory.Add(inv);
+                }
+                else
+                {
+                    var newQuantity = (short)(inv.Quantity + qty);
+                    inv.Quantity = Math.Min((short)4, newQuantity);
+                }
+            }
+
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        public async Task<List<UserCardDTO>> GetUserCollectionAsync(long userId)
+        {
+            var query =
+                from inv in _db.UserCardInventory.AsNoTracking()
+                join c in _db.Cards.AsNoTracking() on inv.CardId equals c.Id
+                join e in _db.Expansions.AsNoTracking() on c.ExpansionId equals e.Id
+                where inv.UserId == userId
+                select new UserCardDTO
+                {
+                    CardId = c.Id,
+                    Name = c.Name,
+                    Suit = c.Suit,
+                    Rarity = c.Rarity,
+                    Points = c.Points,
+                    Ability = c.Ability,
+                    Trigger = c.Trigger,
+                    Effect = c.Effect,
+                    Amount = (short)c.Amount,
+                    Target = c.Target,
+                    OncePerGame = c.OncePerGame,
+                    AbilityJson = c.AbilityJson,
+                    Quantity = inv.Quantity,
+                    ExpansionCode = e.Code,
+                    ExpansionName = e.Name
+                };
+
+            return await query.ToListAsync();
+        }
     }
 }
