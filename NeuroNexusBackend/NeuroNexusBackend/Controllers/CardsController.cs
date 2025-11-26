@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration.UserSecrets;
 using NeuroNexusBackend.DTOs;
 using NeuroNexusBackend.Services;
 
@@ -12,6 +14,7 @@ namespace NeuroNexusBackend.Controllers
         private readonly ICardService _svc;
         public CardsController(ICardService svc) => _svc = svc;
 
+        
         /// <summary>Bulk upsert de cartas (admin/dev seed).</summary>
         [HttpPost("bulk")]
         public async Task<ActionResult<object>> BulkUpsert([FromBody] List<CardUpsertDTO> body)
@@ -34,6 +37,36 @@ namespace NeuroNexusBackend.Controllers
             var cards = await _svc.GetUserCollectionAsync(userId);
             return Ok(cards);
         }
+        /// <summary>
+        /// Obtém uma carta específica do workshop de um user para edição.
+        /// GET /api/cards/workshop/123?userId=6
+        /// </summary>
+        [HttpGet("workshop/{cardId:long}")]
+        public async Task<ActionResult<WorkshopCardUpsertDTO>> GetWorkshopCard(
+            [FromRoute] long cardId,
+            [FromQuery] long userId)
+        {
+            var card = await _svc.GetWorkshopCardAsync(userId, cardId);
+            if (card is null)
+                return NotFound();
+
+            return Ok(card.Value);
+        }
+
+        /// <summary>
+        /// Cria ou atualiza uma carta do workshop (draft/active).
+        /// POST /api/cards/workshop?userId=6
+        /// body = WorkshopCardUpsertDTO
+        /// </summary>
+        [HttpPost("workshop")]
+        public async Task<ActionResult<WorkshopCardUpsertDTO>> UpsertWorkshopCard(
+            [FromQuery] long userId,
+            [FromBody] WorkshopCardUpsertDTO dto)
+        {
+            var result = await _svc.UpsertWorkshopCardAsync(userId, dto);
+            return Ok(result);
+        }
+
 
     }
 }

@@ -10,44 +10,39 @@ namespace NeuroNexusBackend.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public long Id { get; set; } // DB identity (bigint)
+        public long Id { get; set; }
 
         [Required, StringLength(64)]
-        public string Name { get; set; } = default!; // Display name, unique per Suit
+        public string Name { get; set; } = default!;
 
-        [Required] // One of: Analytical/Creative/Structured/Social (enforced in DB CHECK)
+        [Required, StringLength(32)]
         public string Suit { get; set; } = default!;
 
-        [Required] // One of: Common/Rare/Unique/Legendary (enforced in DB CHECK)
+        [Required, StringLength(16)]
         public string Rarity { get; set; } = default!;
 
-        [Range(1, 5)]
-        public short Points { get; set; } // Value 1..5
+        public short Points { get; set; }
 
-        [StringLength(200)]
-        public string? Ability { get; set; } // Human-readable rules text (optional)
-
-        [Required, StringLength(32)]
-        public string Trigger { get; set; } = "on_reveal"; // e.g., on_reveal, on_points, once_per_game, ...
-
-        [Required, StringLength(32)]
-        public string Effect { get; set; } = "none"; // e.g., draw, gain_points, reduce_burnout, ...
-
-        public short? Amount { get; set; } // numeric delta (e.g., +1/-1), null if N/A
-
-        [StringLength(16)]
-        public string? Target { get; set; } // self/opponent/both/deck/hand/...
-
-        public bool OncePerGame { get; set; } // true if limited-use effect
-
-        /// <summary>
-        /// Optional JSON payload with extra conditions/parameters.
-        /// Stored as JSONB in PostgreSQL.
-        /// </summary>
+        public string? Ability { get; set; }
+        public string Trigger { get; set; } = default!;
+        public string Effect { get; set; } = default!;
+        public short? Amount { get; set; }
+        public string? Target { get; set; }
+        public bool OncePerGame { get; set; }
         public string? AbilityJson { get; set; }
+
         public long ExpansionId { get; set; }
         public Expansion Expansion { get; set; } = null!;
 
+        // NOVO – workshop
+        public long? OwnerId { get; set; }          // null = oficial, != null = user
+        public string? FlavorText { get; set; }
+        public string Status { get; set; } = "official";
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
     }
+
+
+
 
 }

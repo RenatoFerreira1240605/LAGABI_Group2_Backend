@@ -14,5 +14,6 @@
         public bool OncePerGame { get; set; }     // true para “once per game”
         public string? AbilityJson { get; set; }  // condições extra arbitrárias
         public string? ExpansionCode { get; set; }
+        public string? FlavorText { get; set; }
     }
 }

@@ -36,5 +36,16 @@ namespace NeuroNexusBackend.Controllers
             var list = await _cardService.GetExpansionsAsync(userId);
             return Ok(list);
         }
+
+        [HttpPost("admin/upsert")]
+        public async Task<ActionResult<ExpansionDTO>> Upsert([FromBody] ExpansionUpsertDTO dto)
+        {
+            // opcional: mais tarde podes pôr [Authorize(Roles = "Dev")] aqui
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _cardService.UpsertExpansionAsync(dto);
+            return Ok(result);
+        }
     }
 }

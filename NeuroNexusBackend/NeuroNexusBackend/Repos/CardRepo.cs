@@ -44,8 +44,11 @@ namespace NeuroNexusBackend.Repos
                         Target = c.Target,
                         OncePerGame = c.OncePerGame,
                         AbilityJson = c.AbilityJson,
-                        ExpansionId = expansion.Id
-
+                        ExpansionId = expansion.Id,
+                        FlavorText = c.FlavorText,
+                        CreatedAt = DateTime.UtcNow,
+                        OwnerId = null,            // oficial
+                        Status = "official"
                     };
                     _db.Cards.Add(existing);
                 }
@@ -60,8 +63,9 @@ namespace NeuroNexusBackend.Repos
                     existing.Target = c.Target;
                     existing.OncePerGame = c.OncePerGame;
                     existing.AbilityJson = c.AbilityJson;
-                    existing.ExpansionId = expansion.Id
-;
+                    existing.ExpansionId = expansion.Id;
+                    existing.FlavorText = c.FlavorText;
+                    existing.UpdatedAt = DateTime.UtcNow;
                 }
             }
             await _db.SaveChangesAsync();
@@ -69,21 +73,25 @@ namespace NeuroNexusBackend.Repos
 
         public async Task<List<CardRuntimeDTO>> QueryRuntimeAsync(string? suit, string? rarity, string? trigger, string? effect)
         {
-            var q = _db.Cards.AsNoTracking().Select(x => new CardRuntimeDTO
-            {
-                Id = x.Id,
-                Name = x.Name,
-                Suit = x.Suit,
-                Rarity = x.Rarity,
-                Points = x.Points,
-                Ability = x.Ability,
-                Trigger = x.Trigger,
-                Effect = x.Effect,
-                Amount = x.Amount,
-                Target = x.Target,
-                OncePerGame = x.OncePerGame,
-                AbilityJson = x.AbilityJson
-            });
+            var q = _db.Cards.AsNoTracking()
+                .Include(c => c.Expansion)
+                .Select(x => new CardRuntimeDTO
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Suit = x.Suit,
+                    Rarity = x.Rarity,
+                    Points = x.Points,
+                    Ability = x.Ability,
+                    Trigger = x.Trigger,
+                    Effect = x.Effect,
+                    Amount = x.Amount,
+                    Target = x.Target,
+                    OncePerGame = x.OncePerGame,
+                    AbilityJson = x.AbilityJson,
+                    ExpansionCode = x.Expansion.Code,
+                    FlavorText = x.FlavorText
+                });
 
             if (!string.IsNullOrWhiteSpace(suit)) q = q.Where(c => c.Suit == suit);
             if (!string.IsNullOrWhiteSpace(rarity)) q = q.Where(c => c.Rarity == rarity);
@@ -301,6 +309,193 @@ namespace NeuroNexusBackend.Repos
                 };
 
             return await query.ToListAsync();
+        }
+        public async Task<List<WorkshopCardUpsertDTO>> GetWorkshopCardsAsync(long ownerId, string? status)
+        {
+            var q = _db.Cards
+                .AsNoTracking()
+                .Where(c => c.OwnerId == ownerId);
+
+            if (!string.IsNullOrWhiteSpace(status))
+                q = q.Where(c => c.Status == status);
+
+            var result = await (
+                from c in q
+                join e in _db.Expansions.AsNoTracking()
+                    on c.ExpansionId equals e.Id
+                select new WorkshopCardUpsertDTO
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Suit = c.Suit,
+                    Rarity = c.Rarity,
+                    Points = c.Points,
+                    Ability = c.Ability,
+                    Trigger = c.Trigger,
+                    Effect = c.Effect,
+                    Amount = c.Amount,
+                    Target = c.Target,
+                    OncePerGame = c.OncePerGame,
+                    AbilityJson = c.AbilityJson,
+                    FlavorText = c.FlavorText,
+                    ExpansionCode = e.Code,
+                    Status = c.Status
+                }).ToListAsync();
+
+            return result;
+        }
+
+        public async Task<WorkshopCardUpsertDTO?> GetWorkshopCardAsync(long ownerId, long cardId)
+        {
+            var q =
+                from c in _db.Cards.AsNoTracking()
+                join e in _db.Expansions.AsNoTracking()
+                    on c.ExpansionId equals e.Id
+                where c.Id == cardId && c.OwnerId == ownerId
+                select new WorkshopCardUpsertDTO
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Suit = c.Suit,
+                    Rarity = c.Rarity,
+                    Points = c.Points,
+                    Ability = c.Ability,
+                    Trigger = c.Trigger,
+                    Effect = c.Effect,
+                    Amount = c.Amount,
+                    Target = c.Target,
+                    OncePerGame = c.OncePerGame,
+                    AbilityJson = c.AbilityJson,
+                    FlavorText = c.FlavorText,
+                    ExpansionCode = e.Code,
+                    Status = c.Status
+                };
+
+            return await q.SingleOrDefaultAsync();
+        }
+        public async Task<ExpansionDTO> UpsertExpansionAsync(ExpansionUpsertDTO? dto)
+        {
+            if (dto == null) throw new ArgumentNullException(nameof(dto));
+            var code = dto.Code.Trim().ToLowerInvariant();
+            var name = dto.Name.Trim();
+
+            // opcional: garantir que só existe 1 core
+            if (dto.IsCore)
+            {
+                var otherCoreExists = await _db.Expansions
+                    .AnyAsync(e => e.IsCore && e.Code != code);
+
+                if (otherCoreExists)
+                    throw new InvalidOperationException("Only one core expansion is supported.");
+            }
+
+            var entity = await _db.Expansions
+                .SingleOrDefaultAsync(e => e.Code == code);
+
+            if (entity == null)
+            {
+                entity = new Expansion
+                {
+                    Code = code,
+                    Name = name,
+                    IsCore = dto.IsCore
+                };
+
+                _db.Expansions.Add(entity);
+            }
+            else
+            {
+                entity.Name = name;
+                entity.IsCore = dto.IsCore;
+            }
+
+            await _db.SaveChangesAsync();
+
+            return new ExpansionDTO
+            {
+                Code = entity.Code,
+                Name = entity.Name,
+                IsCore = entity.IsCore,
+                Owned = false // este dto é genérico, o "Owned" é calculado noutro endpoint
+            };
+        }
+
+        public async Task<WorkshopCardUpsertDTO> UpsertWorkshopCardAsync(long ownerId, WorkshopCardUpsertDTO dto)
+        {
+            var now = DateTime.UtcNow;
+
+            // Sanity-check do status
+            var status = (dto.Status ?? "draft").ToLowerInvariant();
+            if (status != "draft" && status != "active")
+                throw new ArgumentException("Status must be 'draft' or 'active'.");
+
+            // Expansion
+            var expansionCode = string.IsNullOrWhiteSpace(dto.ExpansionCode)
+                ? "workshop"
+                : dto.ExpansionCode;
+
+            var expansion = await _db.Expansions
+                .SingleAsync(e => e.Code == expansionCode);
+
+            Card entity;
+            if (dto.Id.HasValue && dto.Id.Value > 0)
+            {
+                // Update: só pode mexer na carta se for o dono
+                entity = await _db.Cards
+                    .FirstOrDefaultAsync(c => c.Id == dto.Id.Value && c.OwnerId == ownerId);
+
+                if (entity == null)
+                    throw new KeyNotFoundException("Card not found or not owned by user.");
+            }
+            else
+            {
+                // Create
+                entity = new Card
+                {
+                    OwnerId = ownerId,
+                    CreatedAt = now,
+                };
+                _db.Cards.Add(entity);
+            }
+
+            // Mapear campos editáveis
+            entity.Name = dto.Name;
+            entity.Suit = dto.Suit;
+            entity.Rarity = dto.Rarity;
+            entity.Points = dto.Points;
+            entity.Ability = dto.Ability;
+            entity.Trigger = dto.Trigger;
+            entity.Effect = dto.Effect;
+            entity.Amount = dto.Amount;
+            entity.Target = dto.Target;
+            entity.OncePerGame = dto.OncePerGame;
+            entity.AbilityJson = dto.AbilityJson;
+            entity.FlavorText = dto.FlavorText;
+            entity.Status = status;
+            entity.ExpansionId = expansion.Id;
+            entity.UpdatedAt = now;
+
+            await _db.SaveChangesAsync();
+
+            // Devolver DTO normalizado
+            return new WorkshopCardUpsertDTO
+            {
+                Id = entity.Id,
+                Name = entity.Name,
+                Suit = entity.Suit,
+                Rarity = entity.Rarity,
+                Points = entity.Points,
+                Ability = entity.Ability,
+                Trigger = entity.Trigger,
+                Effect = entity.Effect,
+                Amount = entity.Amount,
+                Target = entity.Target,
+                OncePerGame = entity.OncePerGame,
+                AbilityJson = entity.AbilityJson,
+                FlavorText = entity.FlavorText,
+                ExpansionCode = expansion.Code,
+                Status = entity.Status
+            };
         }
     }
 }

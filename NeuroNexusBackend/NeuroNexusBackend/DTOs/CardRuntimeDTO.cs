@@ -15,5 +15,7 @@
         public bool OncePerGame { get; set; }
         public string? AbilityJson { get; set; }
         public string? ExpansionCode { get; set; }
+        public string? FlavorText { get; set; }
     }
+
 }

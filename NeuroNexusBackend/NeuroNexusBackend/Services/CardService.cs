@@ -25,5 +25,15 @@ namespace NeuroNexusBackend.Services
 
         public Task<List<UserCardDTO>> GetUserCollectionAsync(long userId)
         => _repo.GetUserCollectionAsync(userId);
+        public Task<ExpansionDTO> UpsertExpansionAsync(ExpansionUpsertDTO dto)
+       => _repo.UpsertExpansionAsync(dto);
+        public Task<List<WorkshopCardUpsertDTO>> GetWorkshopCardsAsync(long userId, string? status)
+    => _repo.GetWorkshopCardsAsync(userId, status);
+
+        public Task<WorkshopCardUpsertDTO?> GetWorkshopCardAsync(long userId, long cardId)
+            => _repo.GetWorkshopCardAsync(userId, cardId);
+
+        public Task<WorkshopCardUpsertDTO> UpsertWorkshopCardAsync(long userId, WorkshopCardUpsertDTO dto)
+            => _repo.UpsertWorkshopCardAsync(userId, dto);
     }
 }

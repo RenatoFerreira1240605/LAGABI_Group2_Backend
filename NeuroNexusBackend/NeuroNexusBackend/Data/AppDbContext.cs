@@ -26,11 +26,6 @@ namespace NeuroNexusBackend.Data
         public DbSet<UserExpansion> UserExpansions { get; set; } = default!;
 
 
-        // Workshop (player-created cards)
-        public DbSet<UserCard> UserCards { get; set; } = default!;
-        public DbSet<CardTemplate> CardTemplates { get; set; } = default!;
-        public DbSet<CardReview> CardReviews { get; set; } = default!;
-
         // DDA / Hidden MMR
         public DbSet<MmrRating> MmrRatings { get; set; } = default!;
         public DbSet<Match> Matches { get; set; } = default!;
@@ -86,25 +81,35 @@ namespace NeuroNexusBackend.Data
                 e.Property(x => x.Id).UseIdentityByDefaultColumn();
 
                 e.Property(x => x.Name).HasMaxLength(64).IsRequired();
-                e.Property(x => x.Suit).HasMaxLength(32).IsRequired();      // Analytical|Creative|Structured|Social
-                e.Property(x => x.Rarity).HasMaxLength(16).IsRequired();    // Common|Rare|Unique|Legendary (ou a tua convenção)
+                e.Property(x => x.Suit).HasMaxLength(32).IsRequired();
+                e.Property(x => x.Rarity).HasMaxLength(16).IsRequired();
                 e.Property(x => x.Points).HasDefaultValue((short)0);
 
-                // Campos de runtime/engine (texto simples para evitar problemas com enums/JSONB)
-                e.Property(x => x.Ability).HasMaxLength(64);                 // e.g. Draw / Burnout / Innovation ...
-                e.Property(x => x.Trigger).HasMaxLength(48);                 // e.g. OnReveal / OnAcceptAccept / EndOfRound ...
-                e.Property(x => x.Effect).HasMaxLength(48);                  // e.g. Draw / GainPoints / ReduceBurnout ...
-                e.Property(x => x.Amount);                                   // inteiro curto (pode ser negativo)
-                e.Property(x => x.Target).HasMaxLength(24);                  // Self / Opponent / Both
+                e.Property(x => x.Ability).HasMaxLength(64);
+                e.Property(x => x.Trigger).HasMaxLength(48);
+                e.Property(x => x.Effect).HasMaxLength(48);
+                e.Property(x => x.Amount);
+                e.Property(x => x.Target).HasMaxLength(24);
                 e.Property(x => x.OncePerGame).HasDefaultValue(false);
-                e.Property(x => x.AbilityJson).HasColumnType("text");        // JSON como string
+                e.Property(x => x.AbilityJson).HasColumnType("text");
                 e.Property(x => x.ExpansionId).IsRequired();
 
                 e.HasOne(x => x.Expansion)
                     .WithMany()
                     .HasForeignKey(x => x.ExpansionId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                // NOVO – workshop
+                e.Property(x => x.OwnerId);
+                e.Property(x => x.FlavorText).HasMaxLength(200);
+                e.Property(x => x.Status).HasMaxLength(16).HasDefaultValue("official");
+                e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
+                e.Property(x => x.UpdatedAt);
+
+                e.HasIndex(x => x.OwnerId);
+                e.HasIndex(x => x.Status);
             });
+
 
             // =========================
             // Decks
@@ -171,59 +176,7 @@ namespace NeuroNexusBackend.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // =========================
-            // Workshop / Player-created cards
-            // =========================
-            b.Entity<UserCard>(e =>
-            {
-                e.ToTable("UserCards");
-                e.HasKey(x => x.Id);
-                e.Property(x => x.Id).UseIdentityByDefaultColumn();
-
-                e.Property(x => x.Title).HasMaxLength(64).IsRequired();
-                e.Property(x => x.Suit).HasMaxLength(32).IsRequired();
-                e.Property(x => x.EffectText).HasMaxLength(140);
-                e.Property(x => x.ArtworkUrl).HasMaxLength(512);
-                e.Property(x => x.Status).HasMaxLength(16).HasDefaultValue("draft");
-                e.Property(x => x.Version).HasDefaultValue(1);
-                e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
-
-                e.HasIndex(x => x.OwnerId);
-                e.HasIndex(x => x.Status);
-
-                e.HasOne<User>()
-                    .WithMany()
-                    .HasForeignKey(x => x.OwnerId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                // FK opcional para Template (descomenta se quiseres forçar)
-                // e.HasOne<CardTemplate>().WithMany().HasForeignKey(x => x.TemplateId).OnDelete(DeleteBehavior.Restrict);
-            });
-
-            b.Entity<CardTemplate>(e =>
-            {
-                e.ToTable("CardTemplates");
-                e.HasKey(x => x.Id);
-                e.Property(x => x.Id).UseIdentityByDefaultColumn();
-
-                e.Property(x => x.Name).HasMaxLength(48).IsRequired();
-                e.Property(x => x.Guidance).HasMaxLength(200);
-            });
-
-            b.Entity<CardReview>(e =>
-            {
-                e.ToTable("CardReviews");
-                e.HasKey(x => x.Id);
-                e.Property(x => x.Id).UseIdentityByDefaultColumn();
-                e.Property(x => x.Outcome).HasMaxLength(16).IsRequired();
-                e.Property(x => x.Note).HasMaxLength(500);
-                e.Property(x => x.ReviewedAt).HasDefaultValueSql("now()");
-
-                // FKs opcionais
-                // e.HasOne<UserCard>().WithMany().HasForeignKey(x => x.UserCardId).OnDelete(DeleteBehavior.Cascade);
-                // e.HasOne<User>().WithMany().HasForeignKey(x => x.ReviewerId).OnDelete(DeleteBehavior.Restrict);
-            });
-
+            
             // =========================
             // DDA / Hidden MMR
             // =========================
