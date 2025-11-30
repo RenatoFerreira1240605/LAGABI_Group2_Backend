@@ -305,7 +305,8 @@ namespace NeuroNexusBackend.Repos
                     AbilityJson = c.AbilityJson,
                     Quantity = inv.Quantity,
                     ExpansionCode = e.Code,
-                    ExpansionName = e.Name
+                    ExpansionName = e.Name,
+                    FlavorText = c.FlavorText
                 };
 
             return await query.ToListAsync();

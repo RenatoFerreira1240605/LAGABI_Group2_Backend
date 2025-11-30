@@ -43,7 +43,7 @@ namespace NeuroNexusBackend.Controllers
         /// </summary>
         [HttpGet("workshop")]
         public async Task<ActionResult<WorkshopCardUpsertDTO>> GetWorkshopCard(
-            [FromRoute] long cardId,
+            [FromQuery] long cardId,
             [FromQuery] long userId)
         {
             var card = await _svc.GetWorkshopCardAsync(userId, cardId);

@@ -19,5 +19,6 @@
 
         public string ExpansionCode { get; set; }
         public string ExpansionName { get; set; }
+        public string? FlavorText { get; set; }
     }
 }
