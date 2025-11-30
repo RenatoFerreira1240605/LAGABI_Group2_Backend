@@ -31,7 +31,7 @@ namespace NeuroNexusBackend.Controllers
             return Ok(cards);
         }
         /// <summary>Devolve a coleção de cartas de um utilizador (inventário completo).</summary>
-        [HttpGet("collection/{userId:long}")]
+        [HttpGet("collection")]
         public async Task<ActionResult<List<UserCardDTO>>> GetUserCollection(long userId)
         {
             var cards = await _svc.GetUserCollectionAsync(userId);
@@ -41,7 +41,7 @@ namespace NeuroNexusBackend.Controllers
         /// Obtém uma carta específica do workshop de um user para edição.
         /// GET /api/cards/workshop/123?userId=6
         /// </summary>
-        [HttpGet("workshop/{cardId:long}")]
+        [HttpGet("workshop")]
         public async Task<ActionResult<WorkshopCardUpsertDTO>> GetWorkshopCard(
             [FromRoute] long cardId,
             [FromQuery] long userId)
