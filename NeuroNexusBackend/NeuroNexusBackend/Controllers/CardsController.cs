@@ -42,16 +42,17 @@ namespace NeuroNexusBackend.Controllers
         /// GET /api/cards/workshop/123?userId=6
         /// </summary>
         [HttpGet("workshop/{userId}")]
-        public async Task<ActionResult<WorkshopCardUpsertDTO>> GetWorkshopCard(
-            [FromQuery] long cardId,
+        public async Task<ActionResult<List<WorkshopCardUpsertDTO>>> GetWorkshopCard(
+            [FromQuery] long? cardId,
+            [FromQuery] string? status,
             [FromRoute] long userId)
         {
-            var card = await _svc.GetWorkshopCardAsync(userId, cardId);
-            if (card is null)
+            var cards = await _svc.GetWorkshopCardsAsync(userId, cardId, status);
+            if (cards is null)
                 return NotFound();
 
-            return Ok(card.Value);
-        }
+            return Ok(cards);
+        }        
 
         /// <summary>
         /// Cria ou atualiza uma carta do workshop (draft/active).
@@ -65,6 +66,17 @@ namespace NeuroNexusBackend.Controllers
         {
             var result = await _svc.UpsertWorkshopCardAsync(userId, dto);
             return Ok(result);
+        }
+
+        [HttpPost("inventory/{userId}")]
+        public async Task<ActionResult> GrantInventory([FromRoute] long userId, [FromBody] List<AddToInventoryDTO> grants)
+        {
+            if (grants == null || grants.Count == 0)
+                return BadRequest("Empty Payload.");
+
+            await _svc.GrantCardsToUserAsync(userId, grants);
+
+            return Ok(new { ok = true, count = grants.Count });
         }
 
 

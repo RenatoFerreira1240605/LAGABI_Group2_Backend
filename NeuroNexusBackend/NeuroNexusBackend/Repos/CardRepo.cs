@@ -2,6 +2,7 @@
 using NeuroNexusBackend.Data;
 using NeuroNexusBackend.DTOs;
 using NeuroNexusBackend.Models;
+using System.Linq;
 
 namespace NeuroNexusBackend.Repos
 {
@@ -161,7 +162,22 @@ namespace NeuroNexusBackend.Repos
 
             foreach (var card in cards)
             {
-                const short toAdd = 1; // nº de cópias por carta quando compras a expansão
+                short toAdd = 4;
+                switch (card.Rarity.Trim())
+                {
+                    case "Legedary":
+                        toAdd = 1;
+                        break;
+                    case "Unique":
+                        toAdd = 2;
+                        break;
+                    case "Rare":
+                        toAdd = 3;
+                        break;
+                    default:
+                        toAdd = 4;
+                        break;
+                }
 
                 var inv = await _db.UserCardInventory
                     .SingleOrDefaultAsync(i => i.UserId == userId && i.CardId == card.Id);
@@ -311,7 +327,7 @@ namespace NeuroNexusBackend.Repos
 
             return await query.ToListAsync();
         }
-        public async Task<List<WorkshopCardUpsertDTO>> GetWorkshopCardsAsync(long ownerId, string? status)
+        public async Task<List<WorkshopCardUpsertDTO>> GetWorkshopCardsAsync(long ownerId, long? cardId, string? status)
         {
             var q = _db.Cards
                 .AsNoTracking()
@@ -319,6 +335,9 @@ namespace NeuroNexusBackend.Repos
 
             if (!string.IsNullOrWhiteSpace(status))
                 q = q.Where(c => c.Status == status);
+
+            if (cardId != null)
+                q = q.Where(c => c.Id == cardId);
 
             var result = await (
                 from c in q
@@ -346,34 +365,6 @@ namespace NeuroNexusBackend.Repos
             return result;
         }
 
-        public async Task<WorkshopCardUpsertDTO?> GetWorkshopCardAsync(long ownerId, long cardId)
-        {
-            var q =
-                from c in _db.Cards.AsNoTracking()
-                join e in _db.Expansions.AsNoTracking()
-                    on c.ExpansionId equals e.Id
-                where c.Id == cardId && c.OwnerId == ownerId
-                select new WorkshopCardUpsertDTO
-                {
-                    Id = c.Id,
-                    Name = c.Name,
-                    Suit = c.Suit,
-                    Rarity = c.Rarity,
-                    Points = c.Points,
-                    Ability = c.Ability,
-                    Trigger = c.Trigger,
-                    Effect = c.Effect,
-                    Amount = c.Amount,
-                    Target = c.Target,
-                    OncePerGame = c.OncePerGame,
-                    AbilityJson = c.AbilityJson,
-                    FlavorText = c.FlavorText,
-                    ExpansionCode = e.Code,
-                    Status = c.Status
-                };
-
-            return await q.SingleOrDefaultAsync();
-        }
         public async Task<ExpansionDTO> UpsertExpansionAsync(ExpansionUpsertDTO? dto)
         {
             if (dto == null) throw new ArgumentNullException(nameof(dto));
@@ -498,5 +489,79 @@ namespace NeuroNexusBackend.Repos
                 Status = entity.Status
             };
         }
+        public async Task GrantCardsToUserAsync(long userId, IEnumerable<AddToInventoryDTO> grants)
+        {
+            if (grants == null) throw new ArgumentNullException(nameof(grants));
+
+            // Para evitar N queries por carta, podemos puxar os Ids e fazer um lookup
+            var grantList = grants
+                .Where(g => g.Quantity > 0)
+                .ToList();
+
+            if (!grantList.Any())
+                return;
+
+            var cardIds = grantList.Select(g => g.CardId).Distinct().ToList();
+
+            var cards = await _db.Cards
+                .Where(c => cardIds.Contains(c.Id))
+                .ToListAsync();
+
+            using var tx = await _db.Database.BeginTransactionAsync();
+
+            foreach (var g in grantList)
+            {
+                var card = cards.SingleOrDefault(c => c.Id == g.CardId);
+                if (card == null)
+                    continue; // ou lança exceção se quiseres ser mais estrito
+
+                var rarity = (card.Rarity ?? "").Trim();
+                short maxQty = 4;
+                switch (rarity)
+                {
+                    case "Legedary": 
+                        maxQty = 1;
+                        break;
+                    case "Unique":
+                        maxQty = 2;
+                        break;
+                    case "Rare":
+                        maxQty = 3;
+                        break;
+                    default:
+                        maxQty = 4;
+                        break;
+                }
+
+                var inv = await _db.UserCardInventory
+                    .SingleOrDefaultAsync(i => i.UserId == userId && i.CardId == card.Id);
+
+                short existing = inv?.Quantity ?? 0;
+                short toAdd = g.Quantity;
+
+                var newQty = (short)Math.Min(maxQty, existing + toAdd);
+
+                if (inv == null)
+                {
+                    if (newQty <= 0) continue;
+
+                    inv = new UserCardInventory
+                    {
+                        UserId = userId,
+                        CardId = card.Id,
+                        Quantity = newQty
+                    };
+                    _db.UserCardInventory.Add(inv);
+                }
+                else
+                {
+                    inv.Quantity = newQty;
+                }
+            }
+
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+
     }
 }

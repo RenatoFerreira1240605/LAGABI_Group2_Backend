@@ -18,22 +18,22 @@ namespace NeuroNexusBackend.Services
         public Task PurchaseExpansionAsync(long userId, string expansionCode)
             => _repo.PurchaseExpansionAsync(userId, expansionCode);
         public Task<List<ExpansionDTO>> GetExpansionsAsync(long? userId)
-    => _repo.GetExpansionsAsync(userId);
+            => _repo.GetExpansionsAsync(userId);
 
         public Task GrantCoreStarterBundleAsync(long userId)
-        => _repo.GrantCoreStarterBundleAsync(userId);
+            => _repo.GrantCoreStarterBundleAsync(userId);
 
         public Task<List<UserCardDTO>> GetUserCollectionAsync(long userId)
-        => _repo.GetUserCollectionAsync(userId);
+            => _repo.GetUserCollectionAsync(userId);
         public Task<ExpansionDTO> UpsertExpansionAsync(ExpansionUpsertDTO dto)
-       => _repo.UpsertExpansionAsync(dto);
-        public Task<List<WorkshopCardUpsertDTO>> GetWorkshopCardsAsync(long userId, string? status)
-    => _repo.GetWorkshopCardsAsync(userId, status);
+            => _repo.UpsertExpansionAsync(dto);
 
-        public Task<WorkshopCardUpsertDTO?> GetWorkshopCardAsync(long userId, long cardId)
-            => _repo.GetWorkshopCardAsync(userId, cardId);
+        public Task<List<WorkshopCardUpsertDTO>> GetWorkshopCardsAsync(long userId, long? cardId, string? status)
+            => _repo.GetWorkshopCardsAsync(userId, cardId, status);
 
         public Task<WorkshopCardUpsertDTO> UpsertWorkshopCardAsync(long userId, WorkshopCardUpsertDTO dto)
             => _repo.UpsertWorkshopCardAsync(userId, dto);
+        public Task GrantCardsToUserAsync(long userId, IEnumerable<AddToInventoryDTO> grants)
+            => _repo.GrantCardsToUserAsync(userId, grants);
     }
 }
