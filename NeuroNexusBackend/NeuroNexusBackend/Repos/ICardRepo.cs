@@ -4,6 +4,7 @@ namespace NeuroNexusBackend.Repos
 {
     public interface ICardRepo
     {
+        Task DeleteCard(long cardId);
         Task<List<ExpansionDTO>> GetExpansionsAsync(long? userId);
         Task<List<UserCardDTO>> GetUserCollectionAsync(long userId);
         Task<List<WorkshopCardUpsertDTO>> GetWorkshopCardsAsync(long ownerId, long? cardId, string? status);

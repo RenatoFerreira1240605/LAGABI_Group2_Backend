@@ -35,5 +35,8 @@ namespace NeuroNexusBackend.Services
             => _repo.UpsertWorkshopCardAsync(userId, dto);
         public Task GrantCardsToUserAsync(long userId, IEnumerable<AddToInventoryDTO> grants)
             => _repo.GrantCardsToUserAsync(userId, grants);
+
+        public Task DeleteCard(long cardId)
+            => _repo.DeleteCard(cardId);
     }
 }

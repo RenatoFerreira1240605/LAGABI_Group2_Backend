@@ -14,5 +14,6 @@ namespace NeuroNexusBackend.Services
         Task<ExpansionDTO> UpsertExpansionAsync(ExpansionUpsertDTO dto);
         Task UpsertManyAsync(IEnumerable<CardUpsertDTO> payload);
         Task<WorkshopCardUpsertDTO> UpsertWorkshopCardAsync(long userId, WorkshopCardUpsertDTO dto);
+        Task DeleteCard(long cardId);
     }
 }

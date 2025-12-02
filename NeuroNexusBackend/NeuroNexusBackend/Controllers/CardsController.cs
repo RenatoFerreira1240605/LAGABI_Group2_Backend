@@ -54,20 +54,25 @@ namespace NeuroNexusBackend.Controllers
             return Ok(cards);
         }        
 
-        /// <summary>
-        /// Cria ou atualiza uma carta do workshop (draft/active).
-        /// POST /api/cards/workshop?userId=6
-        /// body = WorkshopCardUpsertDTO
-        /// </summary>
-        [HttpPost("workshop/{userId}")]
-        public async Task<ActionResult<WorkshopCardUpsertDTO>> UpsertWorkshopCard(
-            [FromRoute] long userId,
-            [FromBody] WorkshopCardUpsertDTO dto)
+        [HttpDelete("{cardId}")]
+        public async Task<ActionResult<string>> DeleteCard([FromRoute] long cardId)
         {
-            var result = await _svc.UpsertWorkshopCardAsync(userId, dto);
-            return Ok(result);
+            try
+            {
+                await _svc.DeleteCard(cardId);
+            }
+            catch (Exception e)
+            {
+                return NotFound(e.Message);
+            }
+            return Ok("Card Removed");
         }
 
+        /// <summary>
+        /// Apaga uma carta.
+        /// DELETE /api/cards/?userId=6
+        /// body = WorkshopCardUpsertDTO
+        /// </summary>
         [HttpPost("inventory/{userId}")]
         public async Task<ActionResult> GrantInventory([FromRoute] long userId, [FromBody] List<AddToInventoryDTO> grants)
         {

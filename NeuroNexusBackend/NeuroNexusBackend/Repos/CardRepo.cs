@@ -562,6 +562,14 @@ namespace NeuroNexusBackend.Repos
             await _db.SaveChangesAsync();
             await tx.CommitAsync();
         }
+        public async Task DeleteCard(long cardId)
+        {
+            var card = await _db.Cards.FirstAsync(c => c.Id == cardId);
 
+            using var tx = await _db.Database.BeginTransactionAsync();
+            _db.Cards.Remove(card);
+            await _db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
     }
 }
