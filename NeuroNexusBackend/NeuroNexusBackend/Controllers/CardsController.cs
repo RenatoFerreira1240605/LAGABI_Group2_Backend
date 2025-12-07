@@ -52,9 +52,15 @@ namespace NeuroNexusBackend.Controllers
                 return NotFound();
 
             return Ok(cards);
-        }        
+        }
+        [HttpPost("workshop/{userId}")]
+        public async Task<ActionResult<WorkshopCardUpsertDTO>> UpsertWorkshopCard([FromRoute] long userId, [FromBody] WorkshopCardUpsertDTO dto)
+        {
+            var result = await _svc.UpsertWorkshopCardAsync(userId, dto);
+            return Ok(result);
+        }
 
-        [HttpDelete("{cardId}")]
+            [HttpDelete("{cardId}")]
         public async Task<ActionResult<string>> DeleteCard([FromRoute] long cardId)
         {
             try
