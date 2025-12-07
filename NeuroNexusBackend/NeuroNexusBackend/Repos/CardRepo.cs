@@ -105,6 +105,7 @@ namespace NeuroNexusBackend.Repos
         {
             var expansions = await _db.Expansions
                 .AsNoTracking()
+                .Where(ue => ue.Code != "wks") // excluir workshop
                 .ToListAsync();
 
             HashSet<long> ownedIds = new();
