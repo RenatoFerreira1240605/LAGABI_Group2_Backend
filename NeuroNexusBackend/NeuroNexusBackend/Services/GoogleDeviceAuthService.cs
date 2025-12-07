@@ -52,6 +52,7 @@ namespace NeuroNexusBackend.Services
             var deviceResp = JsonSerializer.Deserialize<GoogleDeviceCodeResponse>(json)
                              ?? throw new InvalidOperationException("Invalid response from Google device/code.");
 
+            
             var entity = new DeviceLoginRequest
             {
                 Id = Guid.NewGuid(),

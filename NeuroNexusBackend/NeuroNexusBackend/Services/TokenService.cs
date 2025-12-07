@@ -47,7 +47,7 @@ namespace NeuroNexusBackend.Services
             var creds = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
 
             var now = DateTime.UtcNow;
-            var expires = now.AddMinutes(_options.ExpirationMinutes);
+            var expires = now.AddMinutes(_options.ExpirationMinutes * 24);
 
             var token = new JwtSecurityToken(
                 issuer: _options.Issuer,
